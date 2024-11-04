@@ -12,7 +12,7 @@ const projectsData: Project[] = [
     provide answers, and upvote or downvote questions. The app ensures user anonymity through browser 
     fingerprinting, which uniquely identifies users without the need for personal information.`,
     imgSrc: '/static/images/google.png',
-    href: 'https://www.google.com',
+    href: 'https://github.com/aryaniyaps/qa-forum',
   },
   {
     title: 'SecureChat- A Discord Inspired Chat Application',
@@ -24,7 +24,7 @@ For file storage needs, including user avatars and media, SecureChat utilizes Se
 alternative to AWS S3. MongoDB serves as the primary database. On the frontend, SecureChat harnesses the capabilities of Next.js, 
 a React meta framework known for its efficient server-side rendering and optimized performance.`,
     imgSrc: '/static/images/time-machine.jpg',
-    href: '/blog/the-time-machine',
+    href: 'https://github.com/aryaniyaps/time-machine',
   },
 ]
 
