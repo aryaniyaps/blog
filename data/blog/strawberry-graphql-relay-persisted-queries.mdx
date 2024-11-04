@@ -6,13 +6,27 @@ draft: true
 summary: In this tutorial, we demonstrate how to integrate Strawberry GraphQL with Relay to enable persisted queries, enhancing the performance of GraphQL applications. We cover the setup of a Relay environment on the client side, provide a Python script to run a GraphQL server that handles persisted queries, and create a custom schema extension for managing those queries. By leveraging persisted queries, developers can efficiently reference and execute stored queries, optimizing the overall performance of their applications.
 ---
 
-## Integrating Strawberry GraphQL with Relay for Persisted Queries
-
 In this tutorial, we will integrate **Strawberry GraphQL** with **Relay** to enable persisted queries. This setup allows you to improve the performance of your GraphQL queries by storing them on the server and referencing them with a unique identifier.
 
 ### Step 1: Configure Relay on the Client Side
 
-First, ensure you have Relay set up on your client side. You can do this by configuring your Relay environment. Make sure to specify the URL for the persisted query configuration:
+First, ensure you have Relay set up on your client side. You can do this by configuring your Relay environment. Make sure to specify the URL for the persisted query configuration in your `package.json`:
+
+```json
+{
+  "relay": {
+    "src": "./src",
+    "language": "typescript",
+    "schema": "../schema/schema.graphql",
+    "persistConfig": {
+      "url": "http://localhost:2999",
+      "params": {}
+    }
+  }
+}
+```
+
+Next, create a function to fetch queries, specifying the URL for your persisted query server:
 
 ```javascript
 import { Environment, Network, RecordSource, Store } from 'relay-runtime'
