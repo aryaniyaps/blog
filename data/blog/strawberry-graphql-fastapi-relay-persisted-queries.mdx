@@ -154,16 +154,18 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description="Run a simple HTTP server for query storage.")
     parser.add_argument("--port", type=int, default=2999, help="Port to run the server on")
+    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to run the server on")
     parser.add_argument("--file", type=str, default="query_map.json", help="File name for storing queries")
 
     args = parser.parse_args()
     port = args.port
+    host = args.host
     file_map_name = Path(args.file)
 
     global query_map
     query_map = QueryMap(file_map_name)
 
-    server = HTTPServer(("127.0.0.1", port), SimpleHTTPRequestHandler)
+    server = HTTPServer((host, port), SimpleHTTPRequestHandler)
     print(f"Server listening on port {port}")
     server.serve_forever()
 
@@ -197,7 +199,7 @@ This script implements a simple HTTP server that listens for POST requests, allo
 You can run the script with the following command:
 
 ```bash
-python run_persist_server.py --file query_map.json --port 2999
+python run_persist_server.py --file query_map.json --port 2999 --host 127.0.0.1
 ```
 
 ### Step 3: Create a Custom Strawberry GraphQL Schema Extension
