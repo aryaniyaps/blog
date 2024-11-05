@@ -1,7 +1,7 @@
 ---
 title: Persisted Queries with Relay, Strawberry GraphQL and FastAPI
 date: '2024-11-05'
-tags: ['python', 'fastapi', 'graphql', 'relay', 'react']
+tags: ['python', 'fastapi', 'graphql', 'strawberry graphql', 'relay', 'react', 'javascript']
 draft: false
 summary: In this tutorial, we’ll walk through how to integrate Strawberry GraphQL and FastAPI with Relay to enable persisted queries, which can significantly boost the performance of GraphQL applications. We’ll cover setting up a Relay environment on the client side, configuring a GraphQL server to handle persisted queries, and extending the Strawberry GraphQL schema to manage these queries.
 ---
@@ -87,48 +87,48 @@ This code sets up a Relay environment with a fetchQuery function that references
 
 ### Step 2: Run the Persist Server
 
-On the server side, we need a way to store and retrieve these persisted queries. Here’s a Python script, run_persist_server.py, that will act as a simple server for handling and saving these queries:
+On the server side, we need a way to store and retrieve these persisted queries. Here’s a Python script, `run_persist_server.py` that will act as a simple server for handling and saving these queries:
 
 ```python
+import argparse
 import json
 from hashlib import md5
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs
 
-FILE_MAP_NAME = "query_map.json"
-
 class QueryMap:
     def __init__(self, file_map_name: Path):
+        """Initializes the QueryMap with a file path for storage."""
         self.file_map_name = file_map_name
-        # Check if the file exists; if not, create an empty JSON file
-        if Path.exists(self.file_map_name):
-            with Path.open(self.file_map_name, "r") as file:
-                self.query_map = json.load(file)
-        else:
-            self.query_map = {}
-            self._flush()  # Create the file with an empty dictionary if it doesn't exist
+        self.query_map = self._load_or_initialize_map()
 
-    def _flush(self) -> None:
-        with Path.open(self.file_map_name, "w") as file:
-            json.dump(self.query_map, file)
+    def _load_or_initialize_map(self) -> dict:
+        """Loads the map from file if it exists; otherwise, initializes an empty map."""
+        if self.file_map_name.exists():
+            with self.file_map_name.open("r") as file:
+                return json.load(file)
+        else:
+            self._flush({})
+            return {}
+
+    def _flush(self, data: dict = None) -> None:
+        """Writes the current map to file."""
+        with self.file_map_name.open("w") as file:
+            json.dump(data or self.query_map, file)
 
     def save_query(self, text: str) -> str:
+        """Generates a unique ID for the given text and saves it in the map."""
         query_id = md5(text.encode()).hexdigest()
         self.query_map[query_id] = text
         self._flush()
         return query_id
 
-query_map = QueryMap(Path(FILE_MAP_NAME))
-
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
+        """Handles POST requests by saving the text query and responding with its ID."""
         if self.headers.get("Content-Type") != "application/x-www-form-urlencoded":
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(
-                b'Only "application/x-www-form-urlencoded" requests are supported.'
-            )
+            self._send_response(400, 'Only "application/x-www-form-urlencoded" requests are supported.')
             return
 
         content_length = int(self.headers["Content-Length"])
@@ -137,27 +137,65 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         text = params.get("text", [None])[0]
 
         if text is None:
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(b"Expected to have `text` parameter in the POST.")
+            self._send_response(400, "Expected `text` parameter in the POST.")
             return
 
         query_id = query_map.save_query(text)
-        response = json.dumps({"id": query_id}).encode()
+        response_data = json.dumps({"id": query_id})
+        self._send_response(200, response_data, content_type="application/json")
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+    def _send_response(self, status_code: int, message: str, content_type: str = "text/plain") -> None:
+        """Helper method to send a response with the given status code and message."""
+        self.send_response(status_code)
+        self.send_header("Content-Type", content_type)
         self.end_headers()
-        self.wfile.write(response)
+        self.wfile.write(message.encode())
+
+def main():
+    parser = argparse.ArgumentParser(description="Run a simple HTTP server for query storage.")
+    parser.add_argument("--port", type=int, default=2999, help="Port to run the server on")
+    parser.add_argument("--file", type=str, default="query_map.json", help="File name for storing queries")
+
+    args = parser.parse_args()
+    port = args.port
+    file_map_name = Path(args.file)
+
+    global query_map
+    query_map = QueryMap(file_map_name)
+
+    server = HTTPServer(("127.0.0.1", port), SimpleHTTPRequestHandler)
+    print(f"Server listening on port {port}")
+    server.serve_forever()
 
 if __name__ == "__main__":
-    PORT = 2999
-    server = HTTPServer(("127.0.0.1", PORT), SimpleHTTPRequestHandler)
-    print(f"Server listening on port {PORT}")
-    server.serve_forever()
+    main()
 ```
 
-This server listens for requests on http://localhost:2999. When a client submits a query, the server hashes it to create a unique ID and stores it in query_map.json.
+This script implements a simple HTTP server that listens for POST requests, allowing clients to submit text queries. Each query is saved with a unique ID generated from an MD5 hash of the text. The server stores these queries in a JSON file, ensuring data persistence even if the server restarts.
+
+#### High-Level Breakdown:
+
+1. **Server Configuration:**
+
+- The script takes in `port` and `file` arguments, allowing customization of the server’s listening port and the filename for storing the query data.
+
+2. **Query Handling and Storage:**
+   Upon receiving a POST request with a text parameter, the server:
+
+- Generates a unique ID for the text using an MD5 hash.
+- Saves this ID-text mapping in a JSON file (specified by the file argument).
+- Responds with the generated ID in JSON format, enabling clients to store them.
+
+3. **JSON Query Storage:**
+
+- The script loads the existing data from the JSON file at startup (if the file exists).
+- New queries are appended to this file, providing a persistent storage solution.
+
+You can run the script with the following command:
+
+```bash
+python run_persist_server.py --file query_map.json --port 2999
+```
 
 ### Step 3: Create a Custom Strawberry GraphQL Schema Extension
 
@@ -224,6 +262,10 @@ schema = Schema(
 
 This completes the configuration, and your server is now ready to handle persisted queries.
 
+> [!IMPORTANT]
+> If you are setting up persisted queries with a project that already has generated definitions, the persisted queries won't be sent to the specified URI.
+> You need to clear the generated definitions and rerun the Relay compiler.
+
 ---
 
 ## Local Persisted Queries
@@ -239,7 +281,7 @@ First, let’s configure Relay in the client application. Ensure Relay is set up
     "language": "typescript",
     "schema": "./schema.graphql",
     "persistConfig": {
-      "file": "./persisted_queries.json",
+      "file": "./query_map.json",
       "algorithm": "MD5" // this can be one of MD5, SHA256, SHA1
     }
   }
@@ -287,7 +329,7 @@ Because our client and server projects are separate, a valid option is to have a
 }
 ```
 
-Here is a script that pushes the `persisted_queries.json` file in the `client` directory to the `query_map.json` file in the server directory.
+Here is a script that pushes the `query_map.json` file in the `client` directory to the `query_map.json` file in the server directory.
 
 ```javascript
 const fs = require('fs')
@@ -296,7 +338,7 @@ const path = require('path')
 // Define paths
 const clientDir = path.join(__dirname, 'client')
 const serverDir = path.join(__dirname, 'server')
-const sourceFile = path.join(clientDir, 'persisted_queries.json')
+const sourceFile = path.join(clientDir, 'query_map.json')
 const destFile = path.join(serverDir, 'query_map.json')
 
 // Check if source file exists
@@ -318,7 +360,10 @@ fs.access(sourceFile, fs.constants.F_OK, (err) => {
 })
 ```
 
-With this in place, every time the relay compiler runs, changes in persisted queries can be synced with the server.
+With this in place, every time the relay compiler runs, changes can be synced with the server.
+
+> [!NOTE]
+> You could also push to another git repository (where your server resides, if applicable) or store the queries in a database here.
 
 ### Step 3: Create a Custom Strawberry GraphQL Schema Extension
 
