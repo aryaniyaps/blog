@@ -171,6 +171,9 @@ if __name__ == "__main__":
     main()
 ```
 
+> [!NOTE]
+> You can also store your queries in a database here
+
 This script implements a simple HTTP server that listens for POST requests, allowing clients to submit text queries. Each query is saved with a unique ID generated from an MD5 hash of the text. The server stores these queries in a JSON file, ensuring data persistence even if the server restarts.
 
 #### High-Level Breakdown:
