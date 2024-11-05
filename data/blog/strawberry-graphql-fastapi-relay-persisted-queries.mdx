@@ -180,18 +180,14 @@ This script implements a simple HTTP server that listens for POST requests, allo
 
 #### High-Level Breakdown:
 
-1. **Server Configuration:**
-
-- The script takes in `port` and `file` arguments, allowing customization of the server’s listening port and the filename for storing the query data.
-
-2. **Query Handling and Storage:**
+1. **Query Handling and Storage:**
    Upon receiving a POST request with a text parameter, the server:
 
 - Generates a unique ID for the text using an MD5 hash.
 - Saves this ID-text mapping in a JSON file (specified by the file argument).
 - Responds with the generated ID in JSON format, enabling clients to store them.
 
-3. **JSON Query Storage:**
+2. **JSON Query Storage:**
 
 - The script loads the existing data from the JSON file at startup (if the file exists).
 - New queries are appended to this file, providing a persistent storage solution.
