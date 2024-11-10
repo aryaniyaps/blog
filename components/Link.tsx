@@ -1,6 +1,5 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
-import Link from 'next/link'
-import type { LinkProps } from 'next/link'
+import { Link, LinkProps } from '@nextui-org/react'
 import { AnchorHTMLAttributes } from 'react'
 
 const CustomLink = ({ href, ...rest }: LinkProps & AnchorHTMLAttributes<HTMLAnchorElement>) => {
@@ -12,11 +11,11 @@ const CustomLink = ({ href, ...rest }: LinkProps & AnchorHTMLAttributes<HTMLAnch
   }
 
   if (isAnchorLink) {
-    return <a className="break-words" href={href} {...rest} />
+    return <Link className="break-words" href={href} {...rest} />
   }
 
   return (
-    <a className="break-words" target="_blank" rel="noopener noreferrer" href={href} {...rest} />
+    <Link className="break-words" target="_blank" rel="noopener noreferrer" href={href} {...rest} />
   )
 }
 

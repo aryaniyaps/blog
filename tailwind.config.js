@@ -74,5 +74,9 @@ module.exports = {
       }),
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography'), nextui()],
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+    nextui({ addCommonColors: true }),
+  ],
 }
