@@ -1,6 +1,6 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: `Aryan Iyappan's Blog`,
+  title: `Aryan Iyappan`,
   author: 'Aryan Iyappan',
   headerTitle: `Aryan Iyappan`,
   description: 'Technical stuff explored by Aryan Iyappan',
