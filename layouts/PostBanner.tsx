@@ -27,16 +27,14 @@ export default function PostMinimal({ content, next, prev, children }: LayoutPro
       <ScrollTopAndComment />
       <article>
         <div>
-          <div className="space-y-1 pb-10 text-center dark:border-gray-700">
-            <div className="w-full">
-              <Bleed>
-                <div className="relative aspect-[4/1] w-full">
-                  <Image src={displayImage} alt={title} fill className="object-cover" />
-                </div>
-              </Bleed>
-            </div>
-            <div className="relative pt-10">
+          <div className="space-y-12 py-10 text-center dark:border-gray-700">
+            <div className="relative">
               <PageTitle>{title}</PageTitle>
+            </div>
+            <div className="w-full">
+              <div className="relative aspect-[4/1] w-full">
+                <Image src={displayImage} alt={title} fill className="object-cover" />
+              </div>
             </div>
           </div>
           <div className="prose max-w-none py-4 dark:prose-invert">{children}</div>
