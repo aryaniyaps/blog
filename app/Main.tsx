@@ -10,7 +10,7 @@ const MAX_DISPLAY = 5
 export default function Home({ posts }) {
   return (
     <>
-      <div className="h-full px-3 md:min-h-screen">
+      <div className="h-full px-3 sm:min-h-screen">
         <Hero />
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {!posts.length && 'No posts found.'}
