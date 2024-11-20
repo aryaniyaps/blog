@@ -16,8 +16,8 @@ export function Hero() {
         height={192}
         className="z-20 h-36 w-36 rounded-full"
       />
-      <h1 className={cn('relative z-20 mt-4 text-xl text-white md:text-4xl')}>Aryan Iyappan</h1>
-      <p className="relative z-20 mt-2 text-center text-neutral-300">
+      <h1 className={cn('relative z-20 mt-4 text-xl md:text-4xl')}>Aryan Iyappan</h1>
+      <p className="relative z-20 mt-2 text-center text-foreground-800">
         Self-driven Software Enthusiast
       </p>
     </div>
