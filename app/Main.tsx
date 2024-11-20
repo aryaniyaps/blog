@@ -10,7 +10,7 @@ const MAX_DISPLAY = 5
 export default function Home({ posts }) {
   return (
     <>
-      <div className="h-screen px-3">
+      <div className="h-full px-3 md:min-h-screen">
         <Hero />
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {!posts.length && 'No posts found.'}
@@ -29,7 +29,7 @@ export default function Home({ posts }) {
                     <div className="space-y-5 xl:col-span-3">
                       <div className="space-y-8">
                         <div className="flex w-full flex-col gap-6">
-                          <h2 className="text-2xl font-bold leading-8 tracking-tight">
+                          <h2 className="text-2xl font-medium">
                             <Link href={`/blog/${slug}`} className="text-foreground-800">
                               {title}
                             </Link>
