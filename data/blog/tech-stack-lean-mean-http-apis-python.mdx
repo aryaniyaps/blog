@@ -14,7 +14,7 @@ tags:
     'structlog',
     'strawberry graphql',
   ]
-draft: true
+draft: false
 layout: PostBanner
 images: ['/static/images/posts/lean-mean-python-http-apis.webp']
 summary: When it comes to building lightweight and efficient HTTP APIs, Python offers a fantastic ecosystem of tools that enable you to create robust, scalable, and maintainable backends. In this post, I'll walk you through my tech stack for building lean and mean APIs with Python. Each component has been chosen to maximize efficiency, readability, and modern best practices.
@@ -121,3 +121,19 @@ Taskiq’s lightweight approach makes it a strong competitor to Celery for small
 - **Fixtures**: Write reusable setups for your tests.
 - **Plugins**: Extend functionality with a variety of plugins.
 - **Readable Syntax**: The syntax is clean, making tests easy to write and understand.
+
+### Plug and play- use when required
+
+_I use the following frameworks in my tech stack only when there is an explicit need for it:_
+
+## Strawberry GraphQL: GraphQL Library
+
+I use GraphQL in my applications whenever there is a need for intense data fetching/ a need to support multiple clients from the same API. When I choose to use GraphQL in
+my tech stack, the best tool in the Python ecosystem is [Strawberry GraphQL](https://strawberry.rocks).
+
+### Key Features:
+
+- **Type Annotations**: Intuitive API that maps python type annotations to GraphQL types
+- **Code First Development**: Allows us to export code into schema, which is powerful and helps code reuse, unlike other libraries like [Ariadne](https://ariadnegraphql.org/) that follow a schema first approach
+- **Async Support**: Supports async/await out of the box
+- **Federation Support**: Supports Apollo Federation whenever required, usually applicable when using a microservice architecture
