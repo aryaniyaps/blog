@@ -14,7 +14,7 @@ const siteMetadata = {
   email: 'aryaniyappan2006@gmail.com',
   github: 'https://github.com/aryaniyaps',
   x: 'https://x.com/aryaniyaps',
-  twitter: 'https://x.com/aryaniyaps',
+  // twitter: 'https://x.com/aryaniyaps',
   // facebook: 'https://facebook.com',
   // youtube: 'https://youtube.com',
   linkedin: 'https://www.linkedin.com/in/aryaniyaps',
