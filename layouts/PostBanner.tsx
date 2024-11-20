@@ -32,7 +32,7 @@ export default function PostMinimal({ content, next, prev, children }: LayoutPro
               <PageTitle>{title}</PageTitle>
             </div>
             <div className="w-full">
-              <div className="relative aspect-[4/1] w-full">
+              <div className="relative aspect-[2/1] w-full">
                 <Image src={displayImage} alt={title} fill className="object-cover" />
               </div>
             </div>
