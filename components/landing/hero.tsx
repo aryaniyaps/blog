@@ -10,7 +10,7 @@ export function Hero() {
     'MLOps Engineer',
     'GraphQL Enthusiast',
     'AWS Cloud Developer',
-    'Student Entreprenuer',
+    'Student Entrepreneur',
   ]
   return (
     <div className="relative flex h-96 w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-background">
