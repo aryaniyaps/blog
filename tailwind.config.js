@@ -28,7 +28,7 @@ module.exports = {
         sans: ['var(--font-rubik)', ...fontFamily.sans],
       },
       colors: {
-        primary: colors.teal,
+        primary: colors.sky,
         gray: colors.gray,
       },
       zIndex: {
