@@ -19,7 +19,7 @@ const siteMetadata = {
   // youtube: 'https://youtube.com',
   linkedin: 'https://www.linkedin.com/in/aryaniyaps',
   // threads: 'https://www.threads.net',
-  instagram: 'https://www.instagram.com/aryaniyaps',
+  // instagram: 'https://www.instagram.com/aryaniyaps',
   // medium: 'https://medium.com',
   locale: 'en-US',
   // set to true if you want a navbar fixed to the top
