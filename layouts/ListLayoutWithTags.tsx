@@ -11,6 +11,7 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import tagData from 'app/tag-data.json'
 import { Button, Pagination } from '@nextui-org/react'
+import Image from '@/components/Image'
 
 interface PaginationProps {
   totalPages: number
@@ -50,7 +51,6 @@ function PaginationComponent({ totalPages, currentPage }: PaginationProps) {
     </div>
   )
 }
-
 export default function ListLayoutWithTags({
   posts,
   title,
@@ -66,47 +66,78 @@ export default function ListLayoutWithTags({
 
   return (
     <>
-      <div className="h-screen">
-        <div className="flex divide-x-1 divide-foreground-200">
-          <div className="hidden h-screen min-w-[280px] max-w-[280px] flex-wrap overflow-auto rounded bg-gray-50 pt-5 dark:bg-background/70 sm:flex">
-            <div className="px-6 py-4">
-              {pathname.startsWith('/blog') ? (
-                <h3 className="text-primary font-bold uppercase">All Posts</h3>
-              ) : (
-                <Link href={`/blog`} className="font-bold uppercase ">
-                  All Posts
-                </Link>
-              )}
-              <ul>
-                {sortedTags.map((t) => {
-                  return (
-                    <li key={t} className="my-3">
-                      {decodeURI(pathname.split('/tags/')[1]) === slug(t) ? (
-                        <h3 className="text-primary inline px-3 py-2 text-sm font-bold uppercase">
-                          {`${t} (${tagCounts[t]})`}
-                        </h3>
-                      ) : (
-                        <Link
-                          href={`/tags/${slug(t)}`}
-                          className="px-3 py-2 text-sm font-medium uppercase text-gray-500 hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-500"
-                          aria-label={`View posts tagged ${t}`}
-                        >
-                          {`${t} (${tagCounts[t]})`}
-                        </Link>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          </div>
-          <div className="pl-12">
+      <div className="flex h-full">
+        {/* Static Sidebar */}
+        <div className="hidden h-screen min-w-[280px] max-w-[280px] overflow-auto rounded bg-gray-50 pt-5 dark:bg-background/70 sm:flex">
+          <div className="px-6 py-4">
+            {pathname.startsWith('/blog') ? (
+              <h3 className="text-primary font-bold uppercase">All Posts</h3>
+            ) : (
+              <Link href={`/blog`} className="font-bold uppercase">
+                All Posts
+              </Link>
+            )}
             <ul>
-              {displayPosts.map((post) => {
-                const { path, date, title, summary, tags } = post
+              {sortedTags.map((t) => {
                 return (
-                  <li key={path} className="py-5">
-                    <article className="flex flex-col space-y-2 xl:space-y-0">
+                  <li key={t} className="my-3">
+                    {decodeURI(pathname.split('/tags/')[1]) === slug(t) ? (
+                      <h3 className="text-primary inline px-3 py-2 text-sm font-bold uppercase">
+                        {`${t} (${tagCounts[t]})`}
+                      </h3>
+                    ) : (
+                      <Link
+                        href={`/tags/${slug(t)}`}
+                        className="px-3 py-2 text-sm font-medium uppercase text-gray-500 hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-500"
+                        aria-label={`View posts tagged ${t}`}
+                      >
+                        {`${t} (${tagCounts[t]})`}
+                      </Link>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </div>
+
+        {/* Scrollable Posts Container */}
+        <div className="flex-1 overflow-auto pl-12">
+          <ul>
+            {displayPosts.map((post) => {
+              const { path, date, title, summary, tags, images } = post
+
+              const coverImage = images?.[0]
+
+              return (
+                <li key={path} className="py-5">
+                  <article className="flex flex-col space-y-2 xl:space-y-0">
+                    <div className="space-y-8">
+                      <div className="flex w-full flex-col gap-6">
+                        {coverImage && (
+                          <Link href={`/${path}`}>
+                            <div className="relative aspect-[2/1] w-full">
+                              <Image
+                                alt={title}
+                                fill
+                                className="rounded-lg object-cover"
+                                src={coverImage}
+                              />
+                            </div>
+                          </Link>
+                        )}
+                        <h2 className="text-2xl font-medium">
+                          <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
+                            {title}
+                          </Link>
+                        </h2>
+                        <div className="flex flex-wrap gap-3">
+                          {tags?.map((tag) => <Tag key={tag} text={tag} />)}
+                        </div>
+                      </div>
+                      <div className="prose max-w-none text-gray-500 dark:text-gray-400">
+                        {summary}
+                      </div>
                       <dl>
                         <dt className="sr-only">Published on</dt>
                         <dd className="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
@@ -115,33 +146,18 @@ export default function ListLayoutWithTags({
                           </time>
                         </dd>
                       </dl>
-                      <div className="space-y-8">
-                        <div className="flex w-full flex-col gap-6">
-                          <h2 className="text-2xl font-medium">
-                            <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
-                              {title}
-                            </Link>
-                          </h2>
-                          <div className="flex flex-wrap gap-3">
-                            {tags?.map((tag) => <Tag key={tag} text={tag} />)}
-                          </div>
-                        </div>
-                        <div className="prose max-w-none text-gray-500 dark:text-gray-400">
-                          {summary}
-                        </div>
-                      </div>
-                    </article>
-                  </li>
-                )
-              })}
-            </ul>
-            {pagination && pagination.totalPages > 1 && (
-              <PaginationComponent
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-              />
-            )}
-          </div>
+                    </div>
+                  </article>
+                </li>
+              )
+            })}
+          </ul>
+          {pagination && pagination.totalPages > 1 && (
+            <PaginationComponent
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+            />
+          )}
         </div>
       </div>
     </>
