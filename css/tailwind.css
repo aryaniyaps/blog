@@ -58,14 +58,3 @@ input:-webkit-autofill:focus {
   display: inline-block;
   vertical-align: middle;
 }
-
-html {
-  @apply h-full;
-  @apply w-full;
-  @apply flex;
-}
-body {
-  @apply w-full;
-  @apply h-full;
-  @apply flex flex-1 flex-col;
-}

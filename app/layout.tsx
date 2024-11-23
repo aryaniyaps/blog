@@ -65,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang={siteMetadata.language}
-      className={`${rubik.variable} scroll-smooth`}
+      className={`${rubik.variable} flex h-full w-full flex-col scroll-smooth `}
       suppressHydrationWarning
     >
       <link
@@ -96,7 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
       <link rel="alternate" type="application/rss+xml" href={`${basePath}/feed.xml`} />
       <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
-        <body>
+        <body className="flex h-full w-full flex-1 flex-col">
           <ThemeProviders>
             <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
             <Header />

@@ -16,7 +16,7 @@
 
 /* Code block styles */
 .code-highlight {
-  @apply float-left min-w-full;
+  @apply float-left w-full;
 }
 
 .code-line {
