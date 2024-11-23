@@ -47,7 +47,7 @@ In this section, we’ll implement persisted queries using a server-based method
 
 First, let’s configure Relay in the client application. Ensure Relay is set up properly and that the Relay environment is configured. In your package.json, add the Relay configuration with the URL of your persisted query server:
 
-```json
+```json:package.json
 {
   "relay": {
     "src": "./src",
@@ -65,7 +65,7 @@ This configuration specifies the location of the schema file and the URL for the
 
 Next, create a function to fetch the queries. This function should send the query ID to the persisted query server, which will retrieve and execute the query on the server.
 
-```javascript
+```typescript:lib/relay-environment.ts
 import { Environment, Network, RecordSource, Store } from 'relay-runtime'
 
 function fetchQuery(operation, variables) {
@@ -93,9 +93,9 @@ This code sets up a Relay environment with a fetchQuery function that references
 
 ### Step 2: Run the Persist Server
 
-On the server side, we need a way to store and retrieve these persisted queries. Here’s a Python script, `run_persist_server.py` that will act as a simple server for handling and saving these queries:
+On the server side, we need a way to store and retrieve these persisted queries. Here’s a Python script that will act as a simple server for handling and saving these queries:
 
-```python
+```python:run_persist_server.py
 import argparse
 import json
 from hashlib import md5
@@ -208,7 +208,7 @@ python run_persist_server.py --file query_map.json --port 2999 --host 127.0.0.1
 
 To use persisted queries, we’ll extend our Strawberry GraphQL schema with a custom schema extension. This extension allows the server to recognize query IDs and look up the corresponding query text.
 
-```python
+```python:app/extensions.py
 import json
 from collections.abc import AsyncIterator, Iterator
 
@@ -248,7 +248,7 @@ This extension retrieves queries from the `persisted_queries_path` and stores th
 
 Next, you need to add it to your Strawberry GraphQL schema. This is done by including the extension when instantiating the schema, so that the persisted query mechanism is activated for every request.
 
-```python
+```python:schema.py
 from pathlib import Path
 
 from strawberry import Schema
@@ -279,7 +279,7 @@ This completes the configuration, and your server is now ready to handle persist
 
 First, let’s configure Relay in the client application. Ensure Relay is set up properly and that the Relay environment is configured. In your package.json, add the following Relay configuration:
 
-```json
+```json:package.json
 {
   "relay": {
     "src": "./src",
@@ -297,7 +297,7 @@ This configuration specifies the location of the local persisted queries file.
 
 Next, create a function to fetch the queries. This function should send the query ID to the persisted query server, which will retrieve and execute the query on the server.
 
-```javascript
+```typescript:lib/relay-environment.ts
 import { Environment, Network, RecordSource, Store } from 'relay-runtime'
 
 function fetchQuery(operation, variables) {
@@ -327,7 +327,7 @@ This code sets up a Relay environment with a fetchQuery function that references
 
 Because our client and server projects are separate, a valid option is to have an additional npm run script to push the query map at compile time to a location accessible by your server:
 
-```json
+```json:package.json
 "scripts": {
   "push-queries": "node ./pushQueries.js",
   "relay": "relay-compiler && npm run push-queries"
@@ -336,7 +336,7 @@ Because our client and server projects are separate, a valid option is to have a
 
 Here is a script that pushes the `query_map.json` file in the `client` directory to the `query_map.json` file in the server directory.
 
-```javascript
+```javascript:pushQueries.js
 const fs = require('fs')
 const path = require('path')
 
@@ -374,7 +374,7 @@ With this in place, every time the relay compiler runs, changes can be synced wi
 
 To use persisted queries, we’ll extend our Strawberry GraphQL schema with a custom schema extension. This extension allows the server to recognize query IDs and look up the corresponding query text.
 
-```python
+```python:app/extensions.py
 import json
 from collections.abc import AsyncIterator, Iterator
 
@@ -414,7 +414,7 @@ This extension retrieves queries from the `persisted_queries_path` and stores th
 
 Next, you need to add it to your Strawberry GraphQL schema. This is done by including the extension when instantiating the schema, so that the persisted query mechanism is activated for every request.
 
-```python
+```python:schema.py
 from pathlib import Path
 
 from strawberry import Schema
