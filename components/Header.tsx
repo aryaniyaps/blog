@@ -28,7 +28,7 @@ const Header = () => {
           siteMetadata.headerTitle
         )}
       </NavbarBrand>
-      <NavbarContent className="hidden gap-4 sm:flex" justify="end">
+      <NavbarContent justify="end">
         {headerNavLinks
           .filter((link) => link.href !== '/')
           .map((link) => (
@@ -38,7 +38,7 @@ const Header = () => {
               </Link>
             </NavbarItem>
           ))}
-        <NavbarItem className="hidden lg:flex">
+        <NavbarItem>
           <SearchButton />
         </NavbarItem>
         <NavbarItem>
