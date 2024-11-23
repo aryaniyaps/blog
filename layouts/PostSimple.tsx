@@ -8,6 +8,7 @@ import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
+import { Divider } from '@nextui-org/react'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -17,7 +18,7 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, next, prev, children }: LayoutProps) {
-  const { path, slug, date, title } = content
+  const { path, slug, date, title, readingTime } = content
 
   return (
     <SectionContainer>
@@ -26,14 +27,16 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
         <div>
           <header>
             <div className="mt-12 space-y-1 border-b border-gray-200 pb-10 text-center dark:border-gray-700">
-              <dl>
-                <div>
+              <div className="flex w-full items-center justify-center divide-x-1 divide-foreground-600 text-base font-medium leading-6 text-foreground-600">
+                <div className="pr-2">
                   <dt className="sr-only">Published on</dt>
-                  <dd className="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
+                  <dd>
                     <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                   </dd>
                 </div>
-              </dl>
+                <p className="pl-2">{readingTime.text}</p>
+              </div>
+
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>
