@@ -101,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
             <Header />
             <SectionContainer>
-              <main className="mb-auto">
+              <main className="mb-auto h-full">
                 <Providers>{children}</Providers>
               </main>
             </SectionContainer>
