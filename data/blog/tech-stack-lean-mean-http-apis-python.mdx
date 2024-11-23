@@ -27,13 +27,17 @@ familiar and enjoy programming with it, but it also allows for insanely fast ite
 
 Plus, there is no bloat across the tech stack. Each framework in my stack is purpose-built, doing exactly what it’s meant to do—nothing more, nothing less.
 
+### Table of Contents
+
+<TOCInline toc={props.toc} exclude="Table of Contents" />
+
 ## 1. FastAPI: Web Framework
 
 [FastAPI](https://fastapi.tiangolo.com) is my go-to microframework for HTTP API development. It strikes the perfect
 balance between minimalism and power, providing a robust foundation for building APIs without the overhead of full-stack
 frameworks like Django.
 
-### Key Features:
+### Key Features
 
 - **Asynchronous by Design**: Unlike Flask, which is based on WSGI, FastAPI supports ASGI, making it ideal for modern applications.
 - **Type Annotations**: It leverages Python's type hints to provide built-in validation and interactive API documentation via OpenAPI (Swagger UI).
@@ -46,7 +50,7 @@ I usually use a separate framework for the frontend like React/ Next.js, so this
 
 For database interactions, I use [SQLAlchemy](https://sqlalchemy.org), the defacto Object-Relational Mapping (ORM) library in Python. It provides a seamless way to work with databases through Python objects, abstracting away raw SQL.
 
-### Key Features:
+### Key Features
 
 - **Async Support**: SQLAlchemy now supports asynchronous capabilities, which I use with asyncpg and PostgreSQL.
 - **Flexibility**: While I often use its ORM features, SQLAlchemy allows for direct SQL queries when needed, ensuring no trade-offs on performance or flexibility.
@@ -131,7 +135,7 @@ _I use the following frameworks in my tech stack only when there is an explicit 
 I use GraphQL in my applications whenever there is a need for intense data fetching/ a need to support multiple clients from the same API. When I choose to use GraphQL in
 my tech stack, the best tool in the Python ecosystem is [Strawberry GraphQL](https://strawberry.rocks).
 
-### Key Features:
+### Key Features
 
 - **Type Annotations**: Intuitive API that maps python type annotations to GraphQL types
 - **Code First Development**: Allows us to export code into schema, which is powerful and helps code reuse, unlike other libraries like [Ariadne](https://ariadnegraphql.org/) that follow a schema first approach
