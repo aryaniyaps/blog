@@ -16,7 +16,6 @@ export default function Footer() {
           <SocialIcon kind="threads" href={siteMetadata.threads} size={6} />
           <SocialIcon kind="medium" href={siteMetadata.medium} size={6} />
         </div>
-        <div className="text-sm">Made with ❤️ using Nextjs</div>
         <div className="flex items-center space-x-2 text-sm ">
           <div>{siteMetadata.author}</div>
           <div>{` • `}</div>
