@@ -18,7 +18,7 @@ import {
 
 const Header = () => {
   return (
-    <Navbar isBordered>
+    <Navbar isBordered isBlurred={false}>
       <NavbarBrand className="flex items-center">
         {typeof siteMetadata.headerTitle === 'string' ? (
           <Link href={'/'} color="foreground" className="font-bold text-inherit">
