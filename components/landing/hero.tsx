@@ -15,13 +15,14 @@ export function Hero() {
         </h1>
         <h2>Self-driven software Enthusiast with a knack for building things</h2>
       </div>
-      <Image
-        src={'/static/images/avatar.jpg'}
-        alt="avatar"
-        width={192}
-        height={192}
-        className="z-20 h-36 w-36 rounded-lg"
-      />
+      <div className="relative h-48 w-full sm:h-36 sm:w-36">
+        <Image
+          src={'/static/images/avatar.jpg'}
+          alt="avatar"
+          fill
+          className="rounded-lg object-cover"
+        />
+      </div>
     </div>
   )
 }
