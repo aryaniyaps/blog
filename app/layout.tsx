@@ -2,7 +2,7 @@ import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
 
-import { Rubik } from 'next/font/google'
+import { Noto_Sans } from 'next/font/google'
 import { Analytics, AnalyticsConfig } from 'pliny/analytics'
 import { SearchProvider, SearchConfig } from 'pliny/search'
 import Header from '@/components/Header'
@@ -13,10 +13,10 @@ import { ThemeProviders } from './theme-providers'
 import { Metadata } from 'next'
 import { Providers } from './providers'
 
-const rubik = Rubik({
+const sansFont = Noto_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-rubik',
+  variable: '--font-sans-custom',
 })
 
 export const metadata: Metadata = {
@@ -65,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang={siteMetadata.language}
-      className={`${rubik.variable} flex h-full w-full flex-col scroll-smooth `}
+      className={`${sansFont.variable} flex h-full w-full flex-col scroll-smooth `}
       suppressHydrationWarning
     >
       <link

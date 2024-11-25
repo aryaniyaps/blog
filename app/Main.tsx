@@ -30,14 +30,16 @@ export default function Home({ posts }) {
                               {title}
                             </Link>
                           </h2>
-                          <div className="flex flex-wrap gap-3">
-                            {tags.map((tag) => (
-                              <Tag key={tag} text={tag} />
-                            ))}
-                          </div>
                         </div>
-                        <div className="prose max-w-none text-gray-500 dark:text-gray-400">
-                          {summary}
+                        <Link href={`/blog/${slug}`}>
+                          <div className="prose max-w-none text-gray-500 dark:text-gray-400">
+                            {summary}
+                          </div>
+                        </Link>
+                        <div className="flex flex-wrap gap-3">
+                          {tags.map((tag) => (
+                            <Tag key={tag} text={tag} />
+                          ))}
                         </div>
                       </div>
                       <div className="flex w-full items-center justify-start gap-4">

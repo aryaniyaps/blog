@@ -8,7 +8,7 @@ interface Props {
 const Tag = ({ text }: Props) => {
   return (
     <Link href={`/tags/${slug(text)}`}>
-      <Chip color="default" size="sm" className="uppercase">
+      <Chip color="default" size="sm" className="uppercase tracking-widest">
         {text.split(' ').join('-')}
       </Chip>
     </Link>

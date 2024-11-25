@@ -26,7 +26,10 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
       <article>
         <div>
           <header>
-            <div className="mt-12 space-y-1 border-b border-gray-200 pb-10 text-center dark:border-gray-700">
+            <div className="mt-12 space-y-8 border-b border-gray-200 pb-10 text-center dark:border-gray-700">
+              <div>
+                <PageTitle>{title}</PageTitle>
+              </div>
               <div className="flex w-full items-center justify-center divide-x-1 divide-foreground-600 text-base font-medium leading-6 text-foreground-600">
                 <div className="pr-2">
                   <dt className="sr-only">Published on</dt>
@@ -35,10 +38,6 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                   </dd>
                 </div>
                 <p className="pl-2">{readingTime.text}</p>
-              </div>
-
-              <div>
-                <PageTitle>{title}</PageTitle>
               </div>
             </div>
           </header>
