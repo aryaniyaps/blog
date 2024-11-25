@@ -107,25 +107,11 @@ export default function ListLayoutWithTags({
             {displayPosts.map((post) => {
               const { path, date, title, summary, tags, images } = post
 
-              const coverImage = images?.[0]
-
               return (
                 <li key={path} className="py-5">
                   <article className="flex flex-col space-y-2 xl:space-y-0">
                     <div className="space-y-8">
                       <div className="flex w-full flex-col gap-6">
-                        {coverImage && (
-                          <Link href={`/${path}`}>
-                            <div className="relative aspect-[2/1] w-full">
-                              <Image
-                                alt={title}
-                                fill
-                                className="rounded-lg object-cover"
-                                src={coverImage}
-                              />
-                            </div>
-                          </Link>
-                        )}
                         <h2 className="text-2xl font-medium">
                           <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
                             {title}

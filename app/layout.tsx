@@ -96,7 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
       <link rel="alternate" type="application/rss+xml" href={`${basePath}/feed.xml`} />
       <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
-        <body className="flex h-full w-full flex-1 flex-col">
+        <body>
           <ThemeProviders>
             <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
             <Header />
