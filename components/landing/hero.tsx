@@ -8,7 +8,7 @@ export function Hero() {
       <div className="flex w-full flex-col items-start justify-center gap-4">
         <h1
           className={cn(
-            'text-xl font-semibold sm:text-4xl sm:font-semibold md:text-6xl md:font-bold'
+            'text-xl font-semibold tracking-tight sm:text-4xl sm:font-semibold md:text-6xl md:font-bold'
           )}
         >
           Hi, I'm Aryan Iyappan👋
