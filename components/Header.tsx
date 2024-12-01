@@ -10,7 +10,7 @@ import Logo from '@/data/logo.svg'
 
 const Header = () => {
   return (
-    <Navbar isBordered isBlurred={false}>
+    <Navbar isBordered isBlurred={false} maxWidth="xl">
       <NavbarBrand className="flex items-center">
         {typeof siteMetadata.headerTitle === 'string' ? (
           <Link href={'/'}>
