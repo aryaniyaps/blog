@@ -10,6 +10,7 @@ import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import { Divider } from '@nextui-org/react'
 import TOCInline from 'pliny/ui/TOCInline'
+import { MoveLeft } from 'lucide-react'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -26,27 +27,34 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
       <ScrollTopAndComment />
       <article>
         <header>
-          <div className="mt-12 space-y-8 pb-10 text-center">
+          <div className="mt-12 space-y-8 pb-10 text-center xl:py-12">
             <div>
               <PageTitle>{title}</PageTitle>
             </div>
-            <div className="flex w-full items-center justify-center divide-x-1 divide-foreground-600 text-base font-medium leading-6 text-foreground-600">
-              <div className="pr-2">
+            <div className="flex w-full items-center justify-center gap-2 text-base font-medium leading-6 text-foreground-500">
+              <div>
                 <dt className="sr-only">Published on</dt>
                 <dd>
                   <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                 </dd>
               </div>
-              <p className="pl-2">{readingTime.text}</p>
+              <div>{` • `}</div>
+              <p>{readingTime.text}</p>
             </div>
           </div>
         </header>
         <div className="pt-10 xl:grid xl:grid-cols-4 xl:gap-x-12">
           {/* TOC */}
           <div className="hidden xl:block">
-            <div className="prose hidden max-w-none pb-8 dark:prose-invert xl:sticky xl:top-24 xl:block">
-              <h4>Table of Contents</h4>
-              <TOCInline toc={toc} />
+            <div className="flex max-w-none flex-col space-y-4 pb-8 xl:sticky xl:top-24">
+              <Link href="/blog" className="flex items-center gap-4 text-foreground-500">
+                <MoveLeft className="h-4 w-4" />
+                Back to blog
+              </Link>
+              <div className="prose w-full dark:prose-invert">
+                <h4>Table of Contents</h4>
+                <TOCInline toc={toc} />
+              </div>
             </div>
           </div>
 
