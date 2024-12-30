@@ -53,13 +53,7 @@ export default function PostLayout({
 				<div className="pt-10 xl:grid xl:grid-cols-4 xl:gap-x-12">
 					{/* TOC */}
 					<div className="hidden xl:block">
-						<div
-							className="flex max-w-none flex-col space-y-4 pb-8 xl:sticky xl:top-24"
-							style={{
-								maxHeight: "calc(100vh - 6rem)", // Adjust height as needed
-								overflowY: "auto",
-							}}
-						>
+						<div className="flex max-w-none flex-col space-y-4 pb-8 xl:sticky xl:top-24">
 							<Link
 								href="/blog"
 								className="flex items-center gap-4 text-foreground-500"
@@ -67,7 +61,13 @@ export default function PostLayout({
 								<MoveLeft className="h-4 w-4" />
 								Back to blog
 							</Link>
-							<div className="prose w-full dark:prose-invert">
+							<div
+								className="prose w-full dark:prose-invert"
+								style={{
+									maxHeight: "calc(100vh - 10rem)", // Adjust height as needed
+									overflowY: "auto",
+								}}
+							>
 								<h4>Table of Contents</h4>
 								<TOCInline toc={toc} />
 							</div>
