@@ -58,3 +58,16 @@ input:-webkit-autofill:focus {
   display: inline-block;
   vertical-align: middle;
 }
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply rounded-full bg-gray-200 dark:bg-neutral-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-gray-300 dark:bg-neutral-800;
+}
