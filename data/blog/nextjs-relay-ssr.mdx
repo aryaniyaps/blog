@@ -69,7 +69,7 @@ While SSR offers significant advantages, you must evaluate whether it is necessa
 This means that every time you navigate to an SSR page, even if it has already been loaded, it always fetches data on every request. 
 If you've used GraphQL, you know that client side caching is important, and it's what makes your app *fly*. Let me give you a couple of examples to showcase the tradeoffs.
 
-let's say that I'm building a job board application. I have a couple of pages.
+let's take a couple of pages from [GitHub](https://github.com) as an example.
 
 The first page is the home page.
 
@@ -77,7 +77,7 @@ The first page is the home page.
   <img src="/static/images/posts/nextjs-relay-ssr/job-board-screen-1.png" />
 </p>
 
-This page has data that is client- specific. The job posts are personalized for each user. Hence, SEO isn't a priority here.
+This page has data that is client- specific. The home feed is personalized for each user. Hence, SEO isn't a priority here.
 Moreover, it is valuable to cache this data on the first load, to prevent unnecessary queries.
 
 For this particular page, we come to the following conclusion:
@@ -86,14 +86,14 @@ For this particular page, we come to the following conclusion:
 ✅ Client Side Rendering
 
 
-The second page is a job detail page.
+The second page is a repository detail page.
 
 <p align="left">
   <img src="/static/images/posts/nextjs-relay-ssr/job-board-screen-2.png" />
 </p>
 
 SEO is a priority here because this page is likely to be shared across the web and needs rich metadata to be present on the first load.
-This page is not user-specific, except for the navbar (we could load the navbar alone on the client side too- in case you were wondering).
+This page is not user-specific, except for certain parts of the navbar (we could load the navbar alone on the client side too- in case you were wondering).
 
 Hence, for this particular page, we make the following tradeoff:
 
