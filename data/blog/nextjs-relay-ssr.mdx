@@ -1,0 +1,114 @@
+---
+title: Server Side Data Fetching Patterns with Relay and Next.js
+date: '2025-01-01'
+tags: ['next.js', 'relay', 'typescript', 'frontend']
+draft: true
+layout: PostSimple
+images: ['/static/images/posts/lean-mean-python-http-apis.webp']
+summary: nil
+---
+
+
+GraphQL is an excellent tool for effortless and efficient data fetching in client side applications (which are mostly Single Page Applications that are rendered client-side).
+With the advent of frameworks like Next.js and Remix, the data fetching paradigm has shifted to also support server side rendering, wherever SEO is a top priority.
+
+While Relay is an excellent GraphQL client, it has primarily only been employed in Client-Side Rendered (CSR) applications.
+Thus, while Relay will work well out of the box with Next.js when only CSR is needed, it makes us think whether it can be used for SSR use cases.
+
+The answer is yes. Relay works exceptionally well in this new data fetching paradigm as well.
+
+
+<p align="left">
+  <img src="/static/images/posts/nextjs-relay-ssr/nextjs-relay-disaster.jpg" />
+</p>
+
+However, there are no resources that guide on integrating Relay for SSR use in the real world, hence trying to make it work on your own feels like pulling your hair out.
+
+
+### Existing Resources/ Guides
+At the time of writing, the only official example for using Relay with Next.js (13) and server side data fetching is [this issue tracker example](https://github.com/relayjs/relay-examples/tree/b6f9b199d0b8027b5a76a11f1821631b216f4df4/issue-tracker-next-v13).
+
+However, it only covers preloading queries on the server.
+It doesn't cover other aspects of server side rendering, such as metadata generation, raising `notFound` exceptions before rendering, and so much more.
+
+Another reason why a naive developer would struggle to setup and utilize Relay correctly, is because of the new data fetching patterns that have been introduced by Next.js-
+developers are encouraged to `fetch` network requests everywhere- during metadata generation and server side data fetching, without worrying about duplicate requests. Next.js and React deduplicate these queries with a scope of each request.
+
+This pattern of firing requests everywhere and deduping them later doesn't play well with GraphQL and Relay.
+
+And it's not because GraphQL requests use the `POST` method which aren't cached by Next.js by default- firing multiple requests when a single request is feasible is an anti-pattern in Relay itself.
+
+### How Server Side Rendering works
+Ignoring the latest trends in data fetching (which mostly adhere to developers using REST APIs) and following what Relay truly preaches, we can utilize the full potential of the client while server side rendering.
+
+But first, it's essential to understand how SSR works in detail.
+
+Server Side Rendering (SSR) is a technique where a web application's HTML is rendered on the server instead of the client. This allows the server to deliver a fully populated HTML page to the browser, improving the user experience, especially for users with slower devices or internet connections. SSR is particularly valuable for applications where SEO (Search Engine Optimization) and faster initial load times are critical.
+
+Here’s how SSR works step by step:
+
+    **1. Initial Request**
+    When a user navigates to a web page, the browser sends an HTTP request to the server.
+    The server processes this request, determines the data required for the page, and fetches it.
+
+    **2. Data Fetching on the Server**
+    In SSR, the server retrieves all necessary data (e.g., from a database or an API) before generating the HTML.
+
+    **3. Rendering the HTML**
+    The server renders the application’s components into an HTML string, populating it with the fetched data.
+    Frameworks like React hydrate this HTML string, ensuring that it matches the client-side components.
+
+    **4. Sending the Response**
+    The server sends the fully rendered HTML to the browser.
+    This HTML includes the initial state of the application, so the user sees a complete page immediately.
+
+    **5. Hydration**
+    Once the HTML is received, the browser loads JavaScript to "hydrate" the page.
+    Hydration links the static HTML to the client-side React components, enabling interactivity.
+
+
+### When To Render Server Side
+
+Server side rendering is great, but you need to carefully evaluate whether you need it, before implementing it.
+This is even more important when using GraphQL, as there is an important tradeoff-
+
+**The GraphQL client cache cannot be used during SSR.**
+
+This means that every time you navigate to an SSR page, even if it has already been loaded, it always fetches data on every request. 
+If you've used GraphQL, you know that client side caching is important, and it's what makes your app *fly*. Let me give you a couple of examples to showcase the tradeoffs.
+
+let's say that I'm building a job board application. I have a couple of pages.
+
+The first page is the home page.
+
+<p align="left">
+  <img src="/static/images/posts/nextjs-relay-ssr/job-board-screen-1.png" />
+</p>
+
+This page has data that is client- specific. The job posts are personalized for each user. Hence, SEO isn't a priority here.
+Moreover, it is valuable to cache this data on the first load, to prevent unnecessary queries.
+
+For this particular page, we come to the following conclusion:
+
+❌ Server Side Rendering
+✅ Client Side Rendering
+
+
+The second page is a job detail page.
+
+<p align="left">
+  <img src="/static/images/posts/nextjs-relay-ssr/job-board-screen-2.png" />
+</p>
+
+SEO is a priority here because this page is likely to be shared across the web and needs rich metadata to be present on the first load.
+This page is not user-specific, except for the navbar (we could load the navbar alone on the client side too- in case you were wondering).
+
+Hence, for this particular page, we come to the following conclusion:
+
+✅ Server Side Rendering
+❌ Client Side Rendering
+
+even though this means that we won't use the GraphQL client cache.
+
+Here's a great video about this topic:
+<iframe width="560" height="315" src="https://www.youtube.com/embed/kUs-fH1k-aM?si=SDxoTXOgSeVoa2RF" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />
