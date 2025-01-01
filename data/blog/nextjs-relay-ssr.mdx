@@ -633,6 +633,9 @@ export default async function JobDetailPage({
 
 The client component defines a fragment on the root query.
 
+Also, the `loadSerializableQuery` function call is wrapped with `React.cache()`, to ensure that duplicate network requests aren't made, if the same function is to be used somewhere else.
+This is more evident in the examples that follow.
+
 
 The `JobDetailViewClientComponent` is a regular client side React component which consumes it's specified fragment.
 It loads the preloaded query first, like so:
@@ -794,8 +797,6 @@ export default async function JobDetailPage({
 Here, we make separate fragments for the metadata generation as well as the view data.
 
 The metadata GraphQL fragment is marked as `@inline` and is read with the `readInlineData` function.
-
-Also, the `loadSerializableQuery` function call is wrapped with `React.cache()`, to ensure that duplicate network requests aren't made, if the same function is to be used somewhere else.
 
 ### Server Side Conditional Logic
 
