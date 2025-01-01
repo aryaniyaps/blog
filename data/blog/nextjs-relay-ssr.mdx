@@ -145,7 +145,7 @@ Ideally, all of this data fetching must occur in a single query as well.
 We also need to have two Relay environments- one on the server and one on the client.
 Once the data fetching is done on the server, we hydrate the client environment's response cache with that data.
 
-This is essentially all the following tutorial is about.
+This is essentially all the following tutorial and examples are about.
 
 
 <p align="left">
@@ -585,6 +585,109 @@ It returns a `PreloadedQuery` object, which means that the result can be used wi
 ## Real World Examples
 Now that we have the necessary environments and utilities setup, its time to jump into real world examples.
 
+### Preloading Queries
+
+Here is a SSR Page (that displays a job), that preloads queries on the server.
+
+
+Here is an example SSR page (that displays a job), that also generates metdata with the same GraphQL query:
+
+
+```ts:app/jobs/[slug]/page.tsx
+import loadSerializableQuery from "@/lib/relay/loadSerializableQuery";
+import { cache } from "react";
+import { graphql } from "relay-runtime";
+import JobDetailViewClientComponent from "./JobDetailViewClientComponent";
+import type { pageJobDetailMetadataFragment$key } from "./__generated__/pageJobDetailMetadataFragment.graphql";
+import type JobDetailViewQueryNode from "./__generated__/pageJobDetailViewQuery.graphql";
+import type { pageJobDetailViewQuery } from "./__generated__/pageJobDetailViewQuery.graphql";
+
+export const PageJobDetailViewQuery = graphql`
+  query pageJobDetailViewQuery($slug: String!) {	
+    ...JobDetailViewClientComponentFragment @arguments(slug: $slug)
+  }
+`;
+
+const loadJob = cache(async (slug: string) => {
+	return await loadSerializableQuery<
+		typeof JobDetailViewQueryNode,
+		pageJobDetailViewQuery
+	>(PageJobDetailViewQuery, {
+		slug: slug,
+	});
+});
+
+
+export default async function JobDetailPage({
+	params,
+}: {
+	params: Promise<{ slug: string }>;
+}) {
+	const slug = (await params).slug;
+
+	const preloadedQuery = await loadJob(slug);
+
+	return <JobDetailViewClientComponent preloadedQuery={preloadedQuery} />;
+}
+```
+
+The client component defines a fragment on the root query.
+
+
+The `JobDetailViewClientComponent` is a regular client side React component which consumes it's specified fragment.
+It loads the preloaded query first, like so:
+
+```ts:app/jobs/[slug]/JobDetailViewClientComponent.tsx
+"use client";
+
+import type { SerializablePreloadedQuery } from "@/lib/relay/serializablePreloadedQuery";
+import useSerializablePreloadedQuery from "@/lib/relay/useSerializablePreloadedQuery";
+import {
+	graphql,
+	useFragment,
+	usePreloadedQuery,
+	useRelayEnvironment,
+} from "react-relay";
+
+import JobDetailView from "@/components/job-detail/JobDetailView";
+import type { JobDetailViewClientComponentFragment$key } from "./__generated__/JobDetailViewClientComponentFragment.graphql";
+import type JobDetailViewQueryNode from "./__generated__/pageJobDetailViewQuery.graphql";
+import type { pageJobDetailViewQuery } from "./__generated__/pageJobDetailViewQuery.graphql";
+import PageJobDetailViewQuery from "./__generated__/pageJobDetailViewQuery.graphql";
+
+const JobDetailViewClientComponentFragment = graphql`
+ fragment JobDetailViewClientComponentFragment on Query @argumentDefinitions(
+	  slug: {
+		type: "String!",
+	  }
+	) {
+		...JobDetailViewFragment @arguments(slug: $slug)
+  }
+`;
+
+export default function JobDetailViewClientComponent(props: {
+	preloadedQuery: SerializablePreloadedQuery<
+		typeof JobDetailViewQueryNode,
+		pageJobDetailViewQuery
+	>;
+}) {
+	const environment = useRelayEnvironment();
+	const queryRef = useSerializablePreloadedQuery<
+		typeof JobDetailViewQueryNode,
+		pageJobDetailViewQuery
+	>(environment, props.preloadedQuery);
+
+	const data = usePreloadedQuery(PageJobDetailViewQuery, queryRef);
+
+	const rootQuery = useFragment<JobDetailViewClientComponentFragment$key>(
+		JobDetailViewClientComponentFragment,
+		data,
+	);
+
+	return <JobDetailView rootQuery={rootQuery} />;
+}
+```
+
 
 ### Metadata Generation
 We ideally want to fetch data for metdata generation in a single GraphQL query, along with the data required by the actual view. However, traditionally, fragments can only be accessed using React components. So, how will we access the GraphQL data inside the `generateMetadata` function?
@@ -593,13 +696,12 @@ The answer is- the `@inline` GraphQL directive.
 
 As mentioned in the [Relay documentation](https://relay.dev/docs/api-reference/graphql-and-directives/#inline), we can use the `@inline` directive to read data from outside of the render phase (or from outside of React).
 
-Here is an example SSR page (that displays a job), that also generates metdata with the same GraphQL query:
+Here is the same example, that also generates metdata with the GraphQL query:
 
 
 ```ts:app/jobs/[slug]/page.tsx
 import loadSerializableQuery from "@/lib/relay/loadSerializableQuery";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { cache } from "react";
 import { graphql, readInlineData } from "relay-runtime";
 import JobDetailViewClientComponent from "./JobDetailViewClientComponent";
@@ -694,60 +796,6 @@ Here, we make separate fragments for the metadata generation as well as the view
 The metadata GraphQL fragment is marked as `@inline` and is read with the `readInlineData` function.
 
 Also, the `loadSerializableQuery` function call is wrapped with `React.cache()`, to ensure that duplicate network requests aren't made, if the same function is to be used somewhere else.
-
-The `JobDetailViewClientComponent` is a regular client side React component which consumes it's specified fragment.
-It loads the preloaded query first, like so:
-
-```ts:app/jobs/[slug]/JobDetailViewClientComponent.tsx
-"use client";
-
-import type { SerializablePreloadedQuery } from "@/lib/relay/serializablePreloadedQuery";
-import useSerializablePreloadedQuery from "@/lib/relay/useSerializablePreloadedQuery";
-import {
-	graphql,
-	useFragment,
-	usePreloadedQuery,
-	useRelayEnvironment,
-} from "react-relay";
-
-import JobDetailView from "@/components/job-detail/JobDetailView";
-import type { JobDetailViewClientComponentFragment$key } from "./__generated__/JobDetailViewClientComponentFragment.graphql";
-import type JobDetailViewQueryNode from "./__generated__/pageJobDetailViewQuery.graphql";
-import type { pageJobDetailViewQuery } from "./__generated__/pageJobDetailViewQuery.graphql";
-import PageJobDetailViewQuery from "./__generated__/pageJobDetailViewQuery.graphql";
-
-const JobDetailViewClientComponentFragment = graphql`
- fragment JobDetailViewClientComponentFragment on Query @argumentDefinitions(
-	  slug: {
-		type: "String!",
-	  }
-	) {
-		...JobDetailViewFragment @arguments(slug: $slug)
-  }
-`;
-
-export default function JobDetailViewClientComponent(props: {
-	preloadedQuery: SerializablePreloadedQuery<
-		typeof JobDetailViewQueryNode,
-		pageJobDetailViewQuery
-	>;
-}) {
-	const environment = useRelayEnvironment();
-	const queryRef = useSerializablePreloadedQuery<
-		typeof JobDetailViewQueryNode,
-		pageJobDetailViewQuery
-	>(environment, props.preloadedQuery);
-
-	const data = usePreloadedQuery(PageJobDetailViewQuery, queryRef);
-
-	const rootQuery = useFragment<JobDetailViewClientComponentFragment$key>(
-		JobDetailViewClientComponentFragment,
-		data,
-	);
-
-	return <JobDetailView rootQuery={rootQuery} />;
-}
-```
 
 ### Server Side Conditional Logic
 
