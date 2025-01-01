@@ -5,12 +5,12 @@ tags: ['next.js', 'relay', 'graphql', 'typescript', 'frontend']
 draft: false
 layout: PostSimple
 images: []
-summary: This blog post explores how to integrate Relay with Next.js for server-side rendering (SSR), addressing a gap in existing resources. While Relay excels as a GraphQL client for Client-Side Rendering (CSR), this guide demonstrates its potential for SSR use cases, which is vital for applications prioritizing SEO and faster initial load times.
+summary: This blog post explores how to integrate Relay and Next.js with React Server Components (RSC), addressing a gap in existing resources. While Relay excels as a GraphQL client for Client-Side Rendering (CSR), this guide demonstrates its potential for RSC use cases, which is vital for applications prioritizing SEO and faster initial load times.
 ---
 
-GraphQL is an excellent tool for effortless and efficient data fetching in client-side applications, which are mostly Single Page Applications rendered client-side. With the advent of frameworks like Next.js and Remix, the data-fetching paradigm has shifted to support server-side rendering (SSR) where SEO is a top priority.
+GraphQL is an excellent tool for effortless and efficient data fetching in client-side applications, which are mostly Single Page Applications rendered client-side. With the advent of frameworks like Next.js and Remix, the data-fetching paradigm has shifted to support rendering on the server (RSC) where SEO is a top priority.
 
-While Relay is an excellent GraphQL client, it has primarily been employed in Client-Side Rendered (CSR) applications. While Relay works well out of the box with Next.js for CSR, you might wonder if it can also be used for SSR use cases.
+While Relay is an excellent GraphQL client, it has primarily been employed in Client-Side Rendered (CSR) applications. While Relay works well out of the box with Next.js for CSR, you might wonder if it can also be used for use cases that involve RSC.
 
 The answer is yes. Relay works exceptionally well in this new data-fetching paradigm.
 
@@ -18,7 +18,7 @@ The answer is yes. Relay works exceptionally well in this new data-fetching para
   <img src="/static/images/posts/nextjs-relay-ssr/nextjs-relay-disaster.jpg" />
 </p>
 
-However, there are no comprehensive guides for integrating Relay with SSR in real-world scenarios, making it a daunting task.
+However, there are no comprehensive guides for integrating Relay with RSC in real-world scenarios, making it a daunting task.
 
 > TLDR: Use `@inline` fragments to load data for metadata generation and server-side logic, alongside view data.
 
@@ -26,47 +26,47 @@ However, there are no comprehensive guides for integrating Relay with SSR in rea
 
 At the time of writing, the only official example for using Relay with Next.js (13) and server-side data fetching is [this issue tracker example](https://github.com/relayjs/relay-examples/tree/b6f9b199d0b8027b5a76a11f1821631b216f4df4/issue-tracker-next-v13).
 
-This example only covers preloading queries on the server. It does not address other SSR aspects, such as metadata generation, raising `notFound` exceptions before rendering, and more.
+This example only covers preloading queries on the server. It does not address other aspects, such as metadata generation, raising `notFound` exceptions before rendering, and more.
 
 Another challenge arises from Next.js's new data-fetching patterns, which encourage developers to `fetch` network requests everywhere—during metadata generation and server-side data fetching—without worrying about duplicate requests. While Next.js and React deduplicate these queries, this approach does not align well with GraphQL and Relay.
 
 Firing multiple requests when a single request is sufficient is considered an anti-pattern in Relay.
 
-## How Server-Side Rendering Works
+## How React Server Components (RSC) Work
+Before diving into the implementation, it's essential to understand how React Server Components (RSC) work.
 
-Before diving into the implementation, it's essential to understand how SSR works.
-
-Server-Side Rendering (SSR) is a technique where a web application's HTML is rendered on the server rather than the client. This allows the server to deliver a fully populated HTML page to the browser, enhancing user experience, especially for users with slower devices or internet connections. SSR is particularly valuable for applications where SEO and faster initial load times are critical.
-
-### Steps of SSR:
+React Server Components are a React feature designed to optimize the rendering and data-fetching process by splitting the responsibilities between the server and the client. RSC allows some components to be rendered entirely on the server, reducing the amount of JavaScript sent to the client and enhancing performance. This approach is particularly beneficial for applications requiring fast initial load times and efficient data fetching.
+### Steps of RSC:
 
 1. **Initial Request**  
-   The browser sends an HTTP request to the server. The server processes this request, determines the required data, and fetches it.
+   The browser sends an HTTP request to the server. This request specifies the route and any associated data-fetching requirements.
 
 2. **Data Fetching on the Server**  
-   The server retrieves all necessary data (e.g., from a database or an API) before generating the HTML.
+   The server retrieves the necessary data for rendering the server components. This may involve queries to databases, APIs, or other backend services.
 
-3. **Rendering the HTML**  
-   The server renders the application’s components into an HTML string, populating it with the fetched data.
+3. **Server-Side Rendering of Components**  
+   The server processes the React Server Components and renders them into lightweight payloads (not full HTML). These payloads contain the component's serialized structure and data.
 
-4. **Sending the Response**  
-   The server sends the fully rendered HTML to the browser, which includes the application's initial state.
+4. **Streaming the Payload to the Client**  
+   The server streams the payloads to the browser as they are generated. This enables the client to start displaying content incrementally, improving perceived performance.
 
-5. **Hydration**  
-   The browser loads JavaScript to "hydrate" the page, linking the static HTML to the client-side React components for interactivity.
+5. **Client Integration**  
+   The client receives the payloads and uses them to assemble the final UI. Client-side React components handle interactivity and any dynamic updates beyond the server-rendered parts.
 
-## When to Use Server-Side Rendering
+Unlike traditional SSR, RSC eliminates the need for hydration of the server-rendered parts, as they remain static and are separate from client-rendered components. Only the client-rendered components require interactivity.
 
-While SSR offers significant advantages, you must evaluate whether it is necessary for your use case. This is particularly important when using GraphQL due to its trade-offs:
+## When to Use React Server Components
 
-**The GraphQL client cache cannot be used during SSR.**
+While RSC offers significant advantages, you must evaluate whether it is necessary for your use case. This is particularly important when using GraphQL due to its trade-offs:
+
+**The GraphQL client cache cannot be used with RSC.**
 
 <p align="left">
   <img src="/static/images/posts/nextjs-relay-ssr/ssr-tradeoff.jpg" />
 </p>
 
 
-This means that every time you navigate to an SSR page, even if it has already been loaded, it always fetches data on every request. 
+This means that every time you navigate to a RSC, even if it has already been loaded, it always fetches data on every request. 
 If you've used GraphQL, you know that client side caching is important, and it's what makes your app *fly*. Let me give you a couple of examples to showcase the tradeoffs.
 
 let's take a couple of pages from [GitHub](https://github.com) as an example.
@@ -82,7 +82,7 @@ Moreover, it is valuable to cache this data on the first load, to prevent unnece
 
 For this particular page, we come to the following conclusion:
 
-❌ Server Side Rendering
+❌ React Server Components
 ✅ Client Side Rendering
 
 
@@ -97,7 +97,7 @@ This page is not user-specific, except for certain parts of the navbar (we could
 
 Hence, for this particular page, we make the following tradeoff:
 
-✅ Server Side Rendering
+✅ React Server Components
 ❌ Client Side Rendering
 
 even though this means that we won't use the GraphQL client cache.
@@ -105,13 +105,13 @@ even though this means that we won't use the GraphQL client cache.
 [Here's](https://www.youtube.com/embed/kUs-fH1k-aM?si=SDxoTXOgSeVoa2RF) a great video about this topic.
 
 
-## Server Side Rendering with Relay and Next.js- Setup
+## RSC with Relay and Next.js- Setup
 
-Now that we've gone over when to use server side rendering, I trust that you're using it because you truly need it, and not because you want to use the 
+Now that we've gone over when to use RSC, I trust that you're using it because you truly need it, and not because you want to use the 
 hottest data fetching paradigm.
 
 
-### Server Side Data Fetching Paradigms
+### RSC Data Fetching Paradigms
 
 >In our experience, the overwhelming majority of products want one specific behavior: fetch all the data for a view hierarchy while displaying a loading indicator, and then render the entire view once the data is available.
 
@@ -119,7 +119,7 @@ This is a quote taken from the [Relay documentation](https://relay.dev/docs/prin
 
 Essentially, the core pattern of data fetching with Relay is to fetch all the data for a particular view at once, and then render the data when it's available.
 
-The same principle must be applied while fetching data server side as well.
+The same principle must be applied while fetching data with RSC as well.
 
 But here, instead of just fetching data for the view (page contents), we also fetch data for other activities such as:
 - metadata generation
@@ -230,7 +230,7 @@ export const createServerEnvironment = cache(() => {
 
 We are caching the server environment using `React.cache()` to ensure that only one server environment is used throughout the scope of a single request.
 
-Since you are using SSR, you're probably using cookie based authentication. In our network fetch function, we make use of Next.js headers to pass in the
+Since you are using RSC and rendering on the server, you're probably using cookie based authentication. In our network fetch function, we make use of Next.js headers to pass in the
 cookies along with our requests.
 
 We also use the built-in server navigation utilities to redirect in case we come across authentication errors.
@@ -401,7 +401,7 @@ The Relay Environment Provider ideally wraps children at the root component
 
 
 ### Data Fetching Utilities
-Going forward, we need utilities for server side data fetching and client side hydration.
+Going forward, we need utilities for RSC data fetching and client side hydration.
 
 Create the following files to implement *serializable* queries:
 
@@ -572,10 +572,7 @@ Now that we have the necessary environments and utilities setup, its time to jum
 
 ### Preloading Queries
 
-Here is a SSR Page (that displays a job), that preloads queries on the server.
-
-
-Here is an example SSR page (that displays a job), that also generates metdata with the same GraphQL query:
+Here is a Page (that displays a job), that preloads queries on the server.
 
 
 ```ts:app/jobs/[slug]/page.tsx
