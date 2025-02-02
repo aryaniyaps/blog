@@ -12661,6 +12661,13 @@ react-dom@rc:
   languageName: node
   linkType: hard
 
+"react-scrollspy-navigation@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "react-scrollspy-navigation@npm:2.0.6"
+  checksum: 1d5334b611b30c30360cc17c93fab00fc40b6ec36258e99df00a0be7c906de82c8452bc83afb9b77519172c29395d0bd60d571a37fa9f63709fb0888f49edfff
+  languageName: node
+  linkType: hard
+
 "react-style-singleton@npm:^2.2.1":
   version: 2.2.1
   resolution: "react-style-singleton@npm:2.2.1"
@@ -14321,6 +14328,7 @@ react@rc:
     prettier-plugin-tailwindcss: ^0.5.11
     react: rc
     react-dom: rc
+    react-scrollspy-navigation: ^2.0.6
     reading-time: 1.5.0
     rehype-autolink-headings: ^7.1.0
     rehype-citation: ^2.0.0

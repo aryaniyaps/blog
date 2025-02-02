@@ -9,7 +9,7 @@ import SectionContainer from "@/components/SectionContainer";
 import siteMetadata from "@/data/siteMetadata";
 import ScrollTopAndComment from "@/components/ScrollTopAndComment";
 import { Divider } from "@nextui-org/react";
-import TOCInline from "pliny/ui/TOCInline";
+import TOCInline from "components/TOCInline";
 import { MoveLeft } from "lucide-react";
 
 interface LayoutProps {
