@@ -24,7 +24,7 @@ Tools like mypy catch errors early, while smarter IDE suggestions speed up itera
 
 The tools in my tech stack reflect this, they make the most out of type hints wherever possible.
 
-## 1. FastAPI: Web Framework
+## FastAPI: Web Framework
 
 [FastAPI](https://fastapi.tiangolo.com) is my go-to microframework for HTTP API development. It strikes the perfect
 balance between minimalism and power, providing a robust foundation for building APIs without the overhead of full-stack
@@ -39,7 +39,7 @@ frameworks like Django.
 Why not Django? Django shines for full-stack development with HTML templates and admin panels, but for APIs, FastAPI's modern features and speed make it a clear winner.
 I usually use a separate framework for the frontend like React/ Next.js, so this works for me.
 
-## 2. SQLAlchemy: Database Access
+## SQLAlchemy: Database Access
 
 For database interactions, I use [SQLAlchemy](https://sqlalchemy.org), the defacto Object-Relational Mapping (ORM) library in Python. It provides a seamless way to work with databases through Python objects, abstracting away raw SQL.
 
@@ -48,7 +48,7 @@ For database interactions, I use [SQLAlchemy](https://sqlalchemy.org), the defac
 - **Async Support**: SQLAlchemy now supports asynchronous capabilities, which I use with asyncpg and PostgreSQL.
 - **Flexibility**: While I often use its ORM features, SQLAlchemy allows for direct SQL queries when needed, ensuring no trade-offs on performance or flexibility.
 
-## 3. Alembic: Database Migrations
+## Alembic: Database Migrations
 
 Database migrations are a crucial part of any backend project, and that's where [Alembic](https://alembic.sqlalchemy.org/en/latest/) comes in.
 
@@ -58,7 +58,7 @@ As a companion to SQLAlchemy, it provides:
 - A straightforward command-line interface to create and apply migrations.
 - Tight integration with SQLAlchemy models for consistency across your database and code.
 
-## 4. Pydantic: Data Validation/ Parsing
+## Pydantic: Data Validation/ Parsing
 
 FastAPI and Pydantic are a match made in heaven. [Pydantic](https://docs.pydantic.dev) is a data validation library that ensures your inputs are clean and follow the expected structure.
 It is also very performant, with its core being written in Rust.
@@ -69,7 +69,7 @@ Why Pydantic?
 - **Performance**: It's built with speed in mind, leveraging Python's type hints for fast, accurate data validation.
 - **Integration**: It's baked into FastAPI, so you can focus on business logic rather than repetitive validation code.
 
-## 5. Uvicorn: ASGI Web Server
+## Uvicorn: ASGI Web Server
 
 FastAPI requires an ASGI server to run, and [Uvicorn](https://www.uvicorn.org/) is the perfect choice. It’s a lightning-fast ASGI server that supports HTTP/2 and WebSockets, ensuring your app is future-proof.
 For ultimate performance, I always use [uvloop](https://github.com/MagicStack/uvloop) (a blazing fast asyncio event loop) and [httptools](https://github.com/MagicStack/httptools) (a fast HTTP parser) alongside Uvicorn whenever possible.
@@ -88,7 +88,7 @@ Why Uvicorn?
 
 An alternative I’m eager to explore is [Granian](https://github.com/emmett-framework/granian), an ASGI server written from scratch in Rust. Its design promises exceptional performance and scalability, making it an exciting option for future projects.
 
-## 6. Structlog: Logging with Context
+## Structlog: Logging with Context
 
 Logging is essential for debugging and monitoring, and [Structlog](https://www.structlog.org/en/stable/) brings clarity to this task.
 
@@ -98,7 +98,7 @@ Unlike Python’s built-in logging, Structlog provides:
 - **JSON Support**: Out-of-the-box support for logging in JSON format, which is great for tools like Elasticsearch or Splunk.
 - **Asynchronous Context Support**: Perfect for FastAPI’s async ecosystem.
 
-## 7. Taskiq: Task Queues for Background Processing
+## Taskiq: Task Queues for Background Processing
 
 For handling background tasks or worker queues, [Taskiq](https://taskiq-python.github.io/) is my library of choice. It integrates seamlessly with FastAPI to offload long-running operations.
 It also has support for advanced features such as global middlewares and dependency injection.
@@ -111,7 +111,7 @@ Use cases include:
 
 Taskiq’s lightweight approach makes it a strong competitor to Celery for smaller to medium-scale applications.
 
-## 8. PyTest: Pythonic Testing
+## PyTest: Pythonic Testing
 
 [PyTest](https://docs.pytest.org/en/stable/) is my preferred testing framework. It’s simple, extensible, and designed with Pythonic principles. I would say that it is far better than the rather old and unintuitive built-in testing library Python provides.
 
