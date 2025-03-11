@@ -1,0 +1,293 @@
+---
+title: Secure Session Management with JWE/JWS in FastAPI and Next.js
+date: '2025-03-11'
+tags: ['next.js', 'fastapi', 'backend', 'python', 'typescript', 'frontend', 'authentication']
+draft: false
+layout: PostSimple
+images: []
+summary: summary
+---
+
+Implementing secure session management in modern web applications requires careful consideration of token handling. Here's a breakdown of JWE/JWS session implementation using FastAPI and Next.js, along with key security considerations.
+
+
+## Possible approaches
+
+Session management with a decoupled backend and frontend architecture (such as FastAPI and Next.js here) can be handled with the following approaches:
+
+- Opaque tokens (Only the backend can verify the session tokens)
+- Default FastAPI/ Starlette Session Middleware
+- Json Web Signature (JWS) Sessions
+- Json Web Encryption (JWE) Sessions
+
+
+## Should session cookies be readable outside the backend?
+
+While session cookies are generally meant to be only read server side, in a decoupled frontend-backend architecture, the server can use the contents
+of a session cookie to perform client-side route protection checks, authorization checks and more, without making an additional call to the backend.
+
+If this is desirable, the default FastAPI session middleware isn't a great fit here (read on to understand why).
+
+## Default FastAPI/ Starlette Session Middleware
+
+Adding the default session middleware to a FastAPI app is quite straightforward. It uses a signed cookies based approach
+
+```py
+from fastapi import FastAPI 
+from starlette.middleware.sessions import SessionMiddleware
+
+app = FastAPI()
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key="secret",
+        session_cookie="user_session",
+        path="/",
+        same_site="lax",
+        https_only=True,
+        domain=None,
+    )
+
+```
+
+### Limitations 
+The default session middleware signs cookie values with [`itsdangerous`](https://itsdangerous.palletsprojects.com/en/stable/). This makes it challenging to read the contents of the session cookie in the Next.js server, which is decoupled from the FastAPI backend.
+
+While the algorithms used to sign the cookies are open source and mentioned in the documentation, replicating the unsigning logic in the Next.js edge runtime environment takes some effort. Node.js ports of the *itsdangerous* library aren't properly maintained.
+
+The contents of the actual session cookie are still visible, although they cannot be tampered with.
+
+## Json Web Signature (JWS) Sessions
+
+To implement JWS based sessions, we need to write custom middleware code.
+We'll make use of the `jose` python library in this example.
+
+
+Install jose:
+```bash
+pip install -U jose[cryptography]
+```
+
+Custom middleware code:
+```py 
+from jose import jws
+from fastapi import FastAPI, Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+
+
+class JWSSessionMiddleware(BaseHTTPMiddleware):
+    """JWS based session middleware."""
+
+    def __init__(
+        self,
+        app: FastAPI,
+        *,
+        secret_key: str,
+        session_cookie: str = "session",
+        max_age: int = 14 * 24 * 60 * 60,  # 14 days
+        path: str = "/",
+        same_site: str = "lax",
+        https_only: bool = False,
+        domain: str | None = None,
+    ) -> None:
+        super().__init__(app)
+        self.secret_key = secret_key
+        self.session_cookie = session_cookie
+        self.max_age = max_age
+        self.path = path
+        self.same_site = same_site
+        self.https_only = https_only
+        self.domain = domain
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> None:
+        # Try to get the session from the cookie.
+        initial_session_was_empty = True
+        session_data = {}
+        cookie = request.cookies.get(self.session_cookie)
+        if cookie:
+            try:
+                session_data = jws.verify(
+                    cookie,
+                    self.secret_key,
+                    algorithms=["HS256"],
+                )
+                initial_session_was_empty = False
+            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+                session_data = {}
+
+        # Add the session to both request.state and request.scope.
+        request.state.session = session_data
+        request.scope["session"] = session_data
+
+        # Process the request.
+        response: Response = await call_next(request)
+
+        # Ensure the scope's session is updated in case it was modified.
+        request.scope["session"] = request.state.session
+
+        if request.state.session:
+            # sign with RS256 algorithm
+            token = jws.sign(
+                request.state.session,
+                self.secret_key,
+                algorithm="HS256",
+            )
+            response.set_cookie(
+                self.session_cookie,
+                token,
+                max_age=self.max_age,
+                path=self.path,
+                httponly=True,
+                samesite=self.same_site,
+                secure=self.https_only,
+                domain=self.domain,
+            )
+        # If the session was cleared during the request, delete the cookie.
+        elif not request.state.session and not initial_session_was_empty:
+            response.delete_cookie(
+                self.session_cookie,
+                path=self.path,
+                domain=self.domain,
+            )
+
+        return response
+```
+
+### Step 1: Middleware Initialization
+```python
+class SessionMiddleware(BaseHTTPMiddleware):
+    def __init__(...):
+        # Configuration for cookie attributes and JWE secret
+        self.jwe_secret_key = jwe_secret_key
+        self.session_cookie = session_cookie
+        # ... other cookie settings
+```
+
+### Step 2: Request Processing Flow
+1. **Cookie Decryption**
+```python
+cookie = request.cookies.get(self.session_cookie)
+if cookie:
+    session_data_bytes = jwe.decrypt(cookie.encode(), key=self.jwe_secret_key)
+    session_data = json.loads(session_data_bytes)
+```
+2. **Session Injection**
+```python
+request.state.session = session_data  # Available in route handlers
+request.scope["session"] = session_data  # For ASGI context
+```
+
+### Step 3: Response Processing
+1. **Session Encryption**
+```python
+token = jwe.encrypt(
+    json.dumps(request.state.session),
+    key=self.jwe_secret_key,
+    algorithm="dir"
+)
+response.set_cookie(...)  # Sets encrypted cookie
+```
+2. **Session Cleanup**
+```python
+response.delete_cookie()  # If session cleared
+```
+
+## 🔍 Next.js Session Handling
+
+### Session Decryption Middleware
+```typescript
+const { plaintext } = await compactDecrypt(signedValue, secretKey);
+const payload = JSON.parse(new TextDecoder().decode(plaintext));
+```
+
+### Route Protection Logic
+```typescript
+if (requiresAuthenticated(request)) {
+    return isAuthenticated ? response : getAuthenticationResponse(request);
+}
+```
+
+## 🔒 Limitations of Opaque Tokens
+
+1. **Server-Side Storage Dependency**
+   - Requires database lookups for every request
+   - Creates scaling challenges for distributed systems
+
+2. **State Management Complexity**
+   - Session revocation requires immediate storage cleanup
+   - Difficult to implement real-time permission changes
+
+3. **Payload Opaqueness**
+   - Cannot embed metadata (expiration, user context)
+   - Limits client-side validation capabilities
+
+## ✅ Benefits of Encrypted Tokens (JWE)
+
+1. **Stateless Architecture**
+   - No database lookups required
+   - Session data self-contained in token
+   - Horizontal scaling made easier
+
+2. **Tamper-Proof Payloads**
+   ```python
+   # Any modification attempt fails decryption
+   jwe.decrypt(cookie.encode(), key=secret)  # Raises JWEError if tampered
+   ```
+
+3. **Rich Session Data**
+   ```json
+   {
+     "user_id": 123,
+     "2fa_valid_until": "2023-07-20T12:00:00Z",
+     "custom_claims": {...}
+   }
+   ```
+
+4. **Cross-Platform Compatibility**
+   - Same secret key works for Python and Node.js
+   - Ideal for microservices architectures
+
+## ⚠️ Important Considerations
+
+1. **Key Management**
+   - Use proper key rotation strategies
+   - Store secrets in secure vaults (not in code)
+
+2. **Cookie Security**
+   ```python
+   response.set_cookie(
+       httponly=True,
+       secure=True,  # Enable in production
+       samesite='Lax'
+   )
+   ```
+
+3. **Size Limitations**
+   - Keep session data under 4KB (cookie size constraints)
+   - Avoid storing sensitive data despite encryption
+
+4. **Revocation Challenges**
+   - Implement token blocklist for critical security events
+   - Use short expiration times with refresh mechanisms
+
+## 🚀 Implementation Recommendations
+
+1. **Combine with JWS for Signing**
+   ```python
+   # Hybrid approach example
+   jws_token = jws.sign(payload, signing_key)
+   jwe.encrypt(jws_token, encryption_key)
+   ```
+
+2. **Add Security Headers**
+   ```typescript
+   // Next.js middleware
+   response.headers.set('Strict-Transport-Security', 'max-age=63072000')
+   ```
+
+3. **Monitoring**
+   - Track decryption failure rates
+   - Implement suspicious activity detection
+
+This approach provides strong security while maintaining good performance characteristics. The encrypted session cookie pattern is particularly valuable for applications requiring strict data confidentiality and simplified backend infrastructure.
