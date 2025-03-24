@@ -1,0 +1,145 @@
+---
+title: Practical Dataloading with Strawberry GraphQL
+date: '2025-03-24'
+tags: ['strawberry-graphql', 'fastapi', 'backend', 'python', 'graphql']
+draft: true
+layout: PostSimple
+images: []
+summary: This blog post tackles the N+1 query problem in GraphQL by introducing dataloaders for batching requests and reducing database calls. It walks through setting up Aioinject, an async dependency injection library, to manage dataloader lifecycle efficiently with FastAPI and Strawberry GraphQL. The post explores three iterations of dataloader implementation, showing how to eliminate global state, improve performance, and support advanced features like key transformations and reusable factories.
+---
+
+Dataloaders are a necessary abstraction for efficient data fetching in GraphQL. This blog post explores how to practically implement data loading in Python,
+alongside integration with [Aioinject](https://thirvondukr.github.io/aioinject/), an async Python dependency injection library.
+
+## The N+1 Problem
+
+GraphQL provides immense data loading capabilities to clients. But with great power, comes great responsibilities. It is easy to define queries like the 
+one below, which can impact database performance if the resolvers under the hood are implemented naively.
+
+Assuming the following GraphQL schema:
+
+```graphql
+ type Album {  
+   id: ID!  
+   title: String!  
+   artistId: ID!  
+ }
+
+ type Musician {  
+   id: ID!  
+   name: String!  
+   albums: [Album]  
+ }
+
+ type Query {  
+   musicians: [Musician]  
+ }
+```
+
+We can query the schema like:
+
+```graphql
+query MusiciansQuery {  
+  musicians {  
+    id,  
+    name,  
+    albums {  
+      title  
+    }  
+  }  
+}
+```
+
+A naive resolver implementation will fetch the the albums separately from the database on each musician returned, for the query.
+Let’s say it finds *N* musicians in the database. For each musician found, the albums() resolver will be invoked to locate all the albums associated with that musician. 
+This resolver will trigger a database call for each musician, which will be *N* calls. This means that in total, there will be *N+1* database calls occurring.
+
+This is not very efficient and won’t scale after a point.
+
+
+## Dataloaders to the rescue
+
+Here's where dataloaders come to save the day! Dataloaders can batch similar client GraphQL requests into a single query. Basically, consider them as an intermediate layer that converts multiple similar requests to a single batched request. 
+
+You can read more on dataloaders [here](https://strawberry.rocks/docs/guides/dataloaders).
+
+## Initializing dataloaders
+
+We need to share the dataloaders across all resolvers for a single request, so that the data can be batch-loaded and cached in the context of a single request.
+
+Ideally, dataloaders will be initialized once per GraphQL request context. This can be done by defining the dataloaders as an attribute on the `Context` class in Strawberry GraphQL, or by utilizing a dependency injection library that 
+caches the dataloaders for the scope of a single GraphQL request.
+
+You can read more on this [here](https://strawberry.rocks/docs/guides/dataloaders#usage-with-context).
+
+
+## Implementing data loading in a sample resolver
+
+TODO:
+introduce naive loader without DI here, emphasis on why DI is important
+With DI, we can eliminate global state like database connections, and reuse resources efficiently
+
+## Implementing dataloaders with Aioinject 
+
+Now, we're going to implement dataloaders alongside dependency injection, provided by `Aioinject`.
+
+### Setup Guide
+
+- Step 1: Install Aioinject
+```bash
+pip install -U aioinject
+```
+
+- Step 2: Integrate Aioinject with FastAPI
+
+https://thirvondukr.github.io/aioinject/integrations/fastapi/
+
+- Step 3: Integrate Aioinject with Strawberry GraphQL
+
+https://thirvondukr.github.io/aioinject/integrations/strawberry-graphql/
+
+### Iteration 1- Directly injecting into the load function
+
+- declare dataloader load fn (with @inject decorator)
+- declare custom context class
+- declare FastAPI GraphQL context getter
+- Benefits
+- Limitations
+
+
+### Iteration 2- Introduce dependency providers to create dataloaders per request
+
+- declare dataloader creator dependency provider
+- register dependency provider in aioinject container
+- declare custom context class
+- declare FastAPI GraphQL context getter
+- Benefits
+- Limitations
+
+### Iteration 3- Introduce type aliases for data loaders
+
+- declare type alias
+- declare dataloader creator dependency provider
+- register dependency provider in aioinject container
+- declare custom context class
+- declare FastAPI GraphQL context getter
+- Benefits
+- Limitations
+
+
+## Transforming dataloader keys
+We might want to transform the provided keys to another type- like an integer, or an ObjectId, while using MongoDB, in some cases.
+We can implement dataloader key transforms like so:
+
+
+## Creating a dataloader factory function
+
+We can encapsulate the dataloading logic into a reusable function like so:
+
+```py
+```
+
+This dataloader factory function can be used to create multiple dataloaders like so:
+
+```py
+```
