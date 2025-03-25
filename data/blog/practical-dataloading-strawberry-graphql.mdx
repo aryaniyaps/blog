@@ -60,6 +60,26 @@ This is not very efficient and won’t scale after a point.
 ## Dataloaders to the rescue
 
 Here's where dataloaders come to save the day! Dataloaders can batch similar client GraphQL requests into a single query. Basically, consider them as an intermediate layer that converts multiple similar requests to a single batched request. 
+Its main tasks are:
+
+- **Batching:** Instead of making a separate database or API call for every individual query from different resolvers, the DataLoader collects these requests and groups (or “batches”) them together. This way, a single query can retrieve multiple records at once.
+
+- **Caching:** It temporarily stores (caches) results from data fetches during a single request cycle. If the same data is needed again, it can be returned from the cache without making another external call.
+
+### How It Works Step-by-Step
+<p align="left">
+  <img src="/static/images/posts/practical-dataloading-strawberry-graphql/dataloaders-uml.png" />
+</p>
+
+1. **Request Collection:** When a GraphQL resolver requests data (for example, album information), it calls the DataLoader’s load(key) function. The DataLoader collects these requests for the current event loop tick.
+
+2. **Batching and Execution:** At the end of the tick, the DataLoader calls a single batch function (often named batchLoad) with all the collected keys. This function fetches all the requested data in one go, such as via a single database query.
+
+3. **Caching Results:** Once the batch function returns the data, the DataLoader caches the results. Any subsequent request for the same key within the same cycle will retrieve the data from the cache, avoiding redundant work.
+
+4. **Resolver Return:** Finally, the GraphQL resolver receives the data from the DataLoader (either directly from the cache or from the fresh batch) and returns it to the client.
+
+
 
 You can read more on dataloaders [here](https://strawberry.rocks/docs/guides/dataloaders).
 
@@ -90,21 +110,143 @@ Now, we're going to implement dataloaders alongside dependency injection, provid
 pip install -U aioinject
 ```
 
-- Step 2: Integrate Aioinject with FastAPI
+- Step 2: Create an Aioinject container
+```py 
+import aioinject
 
-https://thirvondukr.github.io/aioinject/integrations/fastapi/
+container = aioinject.Container()
+```
 
-- Step 3: Integrate Aioinject with Strawberry GraphQL
+- Step 3: [Integrate Aioinject with FastAPI](https://thirvondukr.github.io/aioinject/integrations/fastapi/)
 
-https://thirvondukr.github.io/aioinject/integrations/strawberry-graphql/
+
+
+- Step 4: [Integrate Aioinject with Strawberry GraphQL](https://thirvondukr.github.io/aioinject/integrations/strawberry-graphql/)
+
 
 ### Iteration 1- Directly injecting into the load function
 
-- declare dataloader load fn (with @inject decorator)
-- declare custom context class
-- declare FastAPI GraphQL context getter
-- Benefits
-- Limitations
+Let us declare our dataloader load function, assuming that we have an account repository named `AccountRepo` that handles the data fetching for us.
+
+```py:app/dataloaders.py
+from typing import Annotated
+
+from aioinject import Inject
+from aioinject.ext.strawberry import inject
+
+from app.repositories import AccountRepo
+
+@inject
+async def load_account_by_id(
+    account_ids: list[str],
+    account_repo: Annotated[AccountRepo, Inject],
+) -> list[Account | None]:
+    """Load multiple accounts by their IDs."""
+    id_to_account_map = {
+        account.id: account
+        for account in await account_repo.get_many_by_ids(account_ids)
+    }
+    return [id_to_account_map.get(account_id) for account_id in account_ids]
+```
+
+Here, we are decorating the load function with the `@inject` decorator, and directly passing in dependencies as arguments.
+
+Next, we need to create a custom context class to place the dataloader in.
+
+```py:app/context.py
+from typing import TypedDict
+
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.dataloader import DataLoader
+from strawberry.types import Info as StrawberryInfo
+
+from app.models import Account
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class Dataloaders:
+    account_by_id: DataLoader[str, Account | None]
+
+
+class BaseContext(TypedDict):
+    request: Request
+    response: Response
+    background_tasks: BackgroundTasks
+    loaders: Dataloaders
+```
+
+We'll also create a function to initialize a new set of dataloaders for each request.
+
+```py:app/context.py {8,23-28}
+from typing import TypedDict
+
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.dataloader import DataLoader
+from strawberry.types import Info as StrawberryInfo
+
+from app.models import Account
+from app.dataloaders import load_account_by_id
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class Dataloaders:
+    account_by_id: DataLoader[str, Account | None]
+
+
+class BaseContext(TypedDict):
+    request: Request
+    response: Response
+    background_tasks: BackgroundTasks
+    loaders: Dataloaders
+
+
+def create_dataloaders() -> Dataloaders:
+    return Dataloaders(
+        account_by_id=DataLoader(
+            load_fn=load_account_by_id,  # type: ignore[arg-type]
+        ),
+    )
+```
+
+Now, we need to declare a custom GraphQL context getter that calls this intialization function.
+
+```py:app/graphql_app.py
+from typing import Annotated
+
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.fastapi import GraphQLRouter
+
+from .context import create_dataloaders, Context
+from .schema import schema
+
+
+async def get_context(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+) -> Context:
+    return Context(
+        request=request,
+        response=response,
+        background_tasks=background_tasks,
+        loaders=create_dataloaders(),
+    )
+
+
+def create_graphql_router() -> GraphQLRouter:
+    return GraphQLRouter(
+        schema=schema,
+        context_getter=get_context,
+        graphql_ide="graphiql",
+    )
+```
+
+Now, we can mount the GraphQL router (with the specified context getter) onto our FastAPI application.
+
+#### ✅ Benefits
+- Easy and straight-forward implementation.
+
+#### ❌ Limitations
+- Static type checkers are not happy- the load function is supposed to take in only one argument, *keys*.
 
 
 ### Iteration 2- Introduce dependency providers to create dataloaders per request
