@@ -93,15 +93,79 @@ caches the dataloaders for the scope of a single GraphQL request.
 You can read more on this [here](https://strawberry.rocks/docs/guides/dataloaders#usage-with-context).
 
 
-## Implementing data loading in a sample resolver
+## A naive attempt at data loading
 
-TODO:
-introduce naive loader without DI here, emphasis on why DI is important
-With DI, we can eliminate global state like database connections, and reuse resources efficiently
+Let us implement a simple data loader, using a pseudo session instance to query an imaginary database, without any dependency injection first.
+```py:app/dataloaders.py
+from typing import List
 
-## Implementing dataloaders with Aioinject 
+from strawberry.dataloader import DataLoader
+import strawberry
 
-Now, we're going to implement dataloaders alongside dependency injection, provided by `Aioinject`.
+from app.database import session
+
+@strawberry.type
+class User:
+    id: strawberry.ID
+
+
+async def load_users_by_id(keys) -> List[User]:
+    async with session() as session:
+        users = await session.find_many(ids=keys)
+    
+    users_by_id = {
+        user.id: user for user in users
+    }
+    return [users_by_id.get(key) for key in keys]
+
+
+loader = DataLoader(load_fn=load_users_by_id)
+```
+
+We can use this dataloader in a resolver like this:
+
+```py:app/schema.py
+import strawberry
+from app.dataloaders import loader
+
+
+@strawberry.type
+class Query:
+    @strawberry.field
+    async def get_user(self, id: strawberry.ID) -> User:
+        return await loader.load(id)
+
+
+schema = strawberry.Schema(query=Query)
+```
+
+This is a very simple implementation, but has a few drawbacks:
+
+
+- **Harder Lifecycle Management:**
+DI frameworks can manage the lifecycle of dependencies, including creation, reuse, and disposal. Without this management, you 
+have to handle these aspects manually, which is error-prone.
+
+- **Tight Coupling:**
+The loader directly imports and uses a specific database session instance, making it hard to swap out or update the session 
+for different environments or needs.
+
+- **Testing Challenges:**
+Without DI, it's more difficult to mock or stub dependencies such as the database session. This makes testing slower, 
+more complex, and less isolated.
+
+- **Reduced Flexibility:**
+Changing the data source (e.g., switching to a cache or microservice) would require modifying the code rather than simply 
+configuring a new dependency.
+
+- **Potential Global State Issues:**
+Manually managing dependencies might inadvertently introduce global state or singleton patterns, which can lead to unexpected side effects, 
+especially in asynchronous or multi-threaded environments.
+
+
+## Integrating data loading with Aioinject
+
+Let's integrate Aioinject to manage dependencies alongside our dataloaders.
 
 ### Setup Guide
 
@@ -127,6 +191,7 @@ container = aioinject.Container()
 ### Iteration 1- Directly injecting into the load function
 
 Let us declare our dataloader load function, assuming that we have an account repository named `AccountRepo` that handles the data fetching for us.
+Let us also assume that the `AccountRepo` has been registered as a dependency in the container, with the appropriate scope.
 
 ```py:app/dataloaders.py
 from typing import Annotated
@@ -404,7 +469,7 @@ Now, this GraphQL router can be mounted onto your FastAPI application.
   - **load_user_by_id** -> loads the user by a string attribute
   - **load_user_by_username** -> also loads the user by a string attribute
 
-  Because Aioinject resolves dependencies based on type hints, we will have a duplicate dependency provider return type, and dependency resolution will fail.
+  Because Aioinject resolves dependencies based on type hints, we will have a duplicate dependency provider return type annotation, and dependency resolution will fail.
 
 ### Iteration 3- Introduce type aliases for data loaders
 
@@ -509,14 +574,85 @@ Now, this GraphQL router can be mounted onto your FastAPI application.
 - This approach might be a little verbose to implement
 
 
-## Transforming dataloader keys
-We might want to transform the provided keys to another type- like an integer, or an ObjectId, while using MongoDB, in some cases.
-We can implement dataloader key transforms like so:
+## Bonus- Transforming dataloader keys
 
+In certain cases, we might want to transform the data loader keys before passing them to the data fetching function.
+You might want to convert your keys to an integer type, or an ObjectId (When you are using MongoDB).
+
+In such cases, we can incorporate
+We might want to transform the provided keys to another type- like an integer, or an ObjectId, while using MongoDB, in some cases.
+
+Moving the key transformation logic inside your dataloaders can prevent you from defining the same redundant transformation logic in multiple
+places outside the loaders.
+
+We can implement dataloader key transforms before data loading like this:
+
+
+**ObjectId Key Transformations**
+
+```py:app/dependencies.py
+from bson import ObjectId
+from strawberry.dataloader import DataLoader
+
+from app.accounts.repositories import AccountRepo
+
+from .models import Account
+
+type AccountByIdLoader = DataLoader[str, Account | None]
+
+async def create_account_by_id_dataloader(
+    account_repo: AccountRepo,
+) -> AccountByIdLoader:
+    """Create a dataloader to load accounts by their IDs."""
+    async def load_fn(account_ids: list[str]) -> list[Account | None]:
+        """Load multiple entities by their keys."""
+        # transform keys here
+        valid_keys = [ObjectId(key) if ObjectId.is_valid(key) for key in account_ids]
+        id_to_account_map = {
+            account.id: account
+            for account in await account_repo.get_many_by_ids(valid_keys)
+        }
+        return [id_to_account_map.get(ObjectId(account_id))) for account_id in account_ids if ObjectId.is_valid(account_id) else None]
+    return Dataloader(load_fn=load_fn)
+```
+
+**Integer Key Transformations**
+
+```py:app/dependencies.py
+from strawberry.dataloader import DataLoader
+
+from app.accounts.repositories import AccountRepo
+
+from .models import Account
+
+type AccountByIdLoader = DataLoader[str, Account | None]
+
+def is_valid_integer(value: str) -> bool:
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+async def create_account_by_id_dataloader(
+    account_repo: AccountRepo,
+) -> AccountByIdLoader:
+    """Create a dataloader to load accounts by their IDs."""
+    async def load_fn(account_ids: list[str]) -> list[Account | None]:
+        """Load multiple entities by their keys."""
+        # transform keys here
+        valid_keys = [int(key) if is_valid_integer(key) for key in account_ids]
+        id_to_account_map = {
+            account.id: account
+            for account in await account_repo.get_many_by_ids(valid_keys)
+        }
+        return [id_to_account_map.get(int(account_id))) for account_id in account_ids if is_valid_integer(account_id) else None]
+    return Dataloader(load_fn=load_fn)
+```
 
 ## Creating a dataloader factory function
 
-We can encapsulate the dataloading logic into a reusable function like so:
+Rewriting the same dataloader that transforms keys, calls the data fetching function, and 
 
 ```py
 ```
