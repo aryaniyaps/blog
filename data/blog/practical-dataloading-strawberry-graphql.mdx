@@ -355,7 +355,7 @@ container.register(aioinject.Scoped(create_dataloaders))
 ```
 
 We can plug the dataloaders into the request context in the following way:
-```py
+```py:app/graphql_app.py
 from typing import Annotated
 
 from aioinject import Injected
@@ -408,13 +408,105 @@ Now, this GraphQL router can be mounted onto your FastAPI application.
 
 ### Iteration 3- Introduce type aliases for data loaders
 
-- declare type alias
-- declare dataloader creator dependency provider
-- register dependency provider in aioinject container
-- declare custom context class
-- declare FastAPI GraphQL context getter
-- Benefits
-- Limitations
+Let us address the limitations in the previous iteration using [type aliases](https://typing.python.org/en/latest/spec/aliases.html), a new feature added since Python 3.11.
+
+We can create type aliases for data loader dependency providers like follows:
+```py:app/dependencies.py
+from strawberry.dataloader import DataLoader
+
+from app.accounts.repositories import AccountRepo
+from app.context import Dataloaders
+
+from .models import Account
+
+type AccountByIdLoader = DataLoader[str, Account | None]
+
+async def create_account_by_id_dataloader(
+    account_repo: AccountRepo,
+) -> AccountByIdLoader:
+    """Create a dataloader to load accounts by their IDs."""
+    async def load_fn(account_ids: list[str]) -> list[Account | None]:
+        """Load multiple entities by their keys."""
+        id_to_account_map = {
+            account.id: account
+            for account in await account_repo.get_many_by_ids(account_ids)
+        }
+        return [id_to_account_map.get(account_id) for account_id in account_ids]
+    return Dataloader(load_fn=load_fn)
+
+def create_dataloaders(
+    account_by_id: AccountByIdLoader,
+) -> Dataloaders:
+    """Create dataloaders for the current context."""
+    return Dataloaders(
+        account_by_id=account_by_id,
+    )
+```
+
+The use of type aliases provides an unique return type annotation for every dependency provider function, which plays nicely
+with the Aioinject dependency injection system.
+
+The remaining steps are similar to the previous iteration.
+
+We register the dependency providers in the Aioinject container:
+
+```py:app/container.py
+import aioinject
+from app.dependencies import create_account_by_id_dataloader, create_dataloaders
+
+container = aioinject.Container()
+container.register(aioinject.Scoped(create_account_by_id_dataloader))
+container.register(aioinject.Scoped(create_dataloaders))
+```
+
+We can plug the dataloaders into the request context in the following way:
+```py:app/graphql_app.py
+from typing import Annotated
+
+from aioinject import Injected
+from aioinject.ext.fastapi import inject
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.fastapi import GraphQLRouter
+
+from .context import Context
+from .dataloaders import Dataloaders
+from .schema import schema
+
+
+@inject
+async def get_context(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    dataloaders: Injected[Dataloaders],
+) -> BaseContext:
+    """Get the context for the GraphQL request."""
+    return Context(
+        request=request,
+        response=response,
+        background_tasks=background_tasks,
+        loaders=dataloaders,
+    )
+
+
+def create_graphql_router() -> GraphQLRouter:
+    """Create a GraphQL router."""
+    return GraphQLRouter(
+        schema=schema,
+        context_getter=get_context,
+        graphql_ide="apollo-sandbox",
+    )
+```
+
+Now, this GraphQL router can be mounted onto your FastAPI application.
+
+#### ✅ Benefits
+- Static typecheckers are happy, we aren't violating any typing rules.
+- We are leveraging the powers of the DI framework to load resources efficiently.
+- We can have multiple data loaders with the same type annotations, uniquely identified by type aliases.
+
+#### ❌ Limitations
+- This approach might be a little verbose to implement
 
 
 ## Transforming dataloader keys
