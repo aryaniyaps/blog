@@ -578,11 +578,8 @@ Now, this GraphQL router can be mounted onto your FastAPI application.
 
 ## Bonus- Transforming dataloader keys
 
-In certain cases, we might want to transform the data loader keys before passing them to the data fetching function.
+In certain cases, you might want to transform the data loader keys before passing them to the data fetching function.
 You might want to convert your keys to an integer type, or an ObjectId (When you are using MongoDB).
-
-In such cases, we can incorporate
-We might want to transform the provided keys to another type- like an integer, or an ObjectId, while using MongoDB, in some cases.
 
 Moving the key transformation logic inside your dataloaders can prevent you from defining the same redundant transformation logic in multiple
 places outside the loaders.
