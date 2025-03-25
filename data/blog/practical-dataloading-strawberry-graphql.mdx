@@ -111,7 +111,7 @@ pip install -U aioinject
 ```
 
 - Step 2: Create an Aioinject container
-```py 
+```py:app/container.py
 import aioinject
 
 container = aioinject.Container()
@@ -244,6 +244,7 @@ Now, we can mount the GraphQL router (with the specified context getter) onto ou
 
 #### ✅ Benefits
 - Easy and straight-forward implementation.
+- We are leveraging the powers of the DI framework to load resources efficiently.
 
 #### ❌ Limitations
 - Static type checkers are not happy- the load function is supposed to take in only one argument, *keys*.
@@ -251,12 +252,159 @@ Now, we can mount the GraphQL router (with the specified context getter) onto ou
 
 ### Iteration 2- Introduce dependency providers to create dataloaders per request
 
-- declare dataloader creator dependency provider
-- register dependency provider in aioinject container
-- declare custom context class
-- declare FastAPI GraphQL context getter
-- Benefits
-- Limitations
+We can implement dataloading in a better way, by creating dependency providers that create dataloaders per request.
+
+```py:app/dependencies.py
+from strawberry.dataloader import DataLoader
+
+from app.accounts.repositories import AccountRepo
+
+from .models import Account
+
+
+async def create_account_by_id_dataloader(
+    account_repo: AccountRepo,
+) -> DataLoader[str, Account | None]:
+    """Create a dataloader to load accounts by their IDs."""
+    async def load_fn(account_ids: list[str]) -> list[Account | None]:
+        """Load multiple entities by their keys."""
+        id_to_account_map = {
+            account.id: account
+            for account in await account_repo.get_many_by_ids(account_ids)
+        }
+        return [id_to_account_map.get(account_id) for account_id in account_ids]
+    return Dataloader(load_fn=load_fn)
+```
+
+Next, we need to add this dependency provider to our Aioinject container.
+
+```py:app/container.py {2, 5}
+import aioinject
+from app.dependencies import create_account_by_id_dataloader
+
+container = aioinject.Container()
+container.register(aioinject.Scoped(create_account_by_id_dataloader))
+```
+
+We also need to create a custom context class, like we did in the previous iteration.
+
+```py:app/context.py
+from typing import TypedDict
+
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.dataloader import DataLoader
+from strawberry.types import Info as StrawberryInfo
+
+from app.models import Account
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class Dataloaders:
+    account_by_id: DataLoader[str, Account | None]
+
+
+class BaseContext(TypedDict):
+    request: Request
+    response: Response
+    background_tasks: BackgroundTasks
+    loaders: Dataloaders
+```
+
+But this time, we create another dependency provider that creates the dataloaders per request for us.
+
+```py:app/dependencies.py {4, 22-28}
+from strawberry.dataloader import DataLoader
+
+from app.accounts.repositories import AccountRepo
+from app.context import Dataloaders
+
+from .models import Account
+
+
+async def create_account_by_id_dataloader(
+    account_repo: AccountRepo,
+) -> DataLoader[str, Account | None]:
+    """Create a dataloader to load accounts by their IDs."""
+    async def load_fn(account_ids: list[str]) -> list[Account | None]:
+        """Load multiple entities by their keys."""
+        id_to_account_map = {
+            account.id: account
+            for account in await account_repo.get_many_by_ids(account_ids)
+        }
+        return [id_to_account_map.get(account_id) for account_id in account_ids]
+    return Dataloader(load_fn=load_fn)
+
+def create_dataloaders(
+    account_by_id: DataLoader[str, Account | None],
+) -> Dataloaders:
+    """Create dataloaders for the current context."""
+    return Dataloaders(
+        account_by_id=account_by_id,
+    )
+```
+
+We need to add this to the container too.
+
+```py:app/container.py {2, 6}
+import aioinject
+from app.dependencies import create_account_by_id_dataloader, create_dataloaders
+
+container = aioinject.Container()
+container.register(aioinject.Scoped(create_account_by_id_dataloader))
+container.register(aioinject.Scoped(create_dataloaders))
+```
+
+We can plug the dataloaders into the request context in the following way:
+```py
+from typing import Annotated
+
+from aioinject import Injected
+from aioinject.ext.fastapi import inject
+from fastapi import BackgroundTasks, Request, Response
+from strawberry.fastapi import GraphQLRouter
+
+from .context import Context
+from .dataloaders import Dataloaders
+from .schema import schema
+
+
+@inject
+async def get_context(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    dataloaders: Injected[Dataloaders],
+) -> BaseContext:
+    """Get the context for the GraphQL request."""
+    return Context(
+        request=request,
+        response=response,
+        background_tasks=background_tasks,
+        loaders=dataloaders,
+    )
+
+
+def create_graphql_router() -> GraphQLRouter:
+    """Create a GraphQL router."""
+    return GraphQLRouter(
+        schema=schema,
+        context_getter=get_context,
+        graphql_ide="apollo-sandbox",
+    )
+```
+
+Now, this GraphQL router can be mounted onto your FastAPI application.
+
+#### ✅ Benefits
+- Static typecheckers are happy, we aren't violating any typing rules.
+- We are leveraging the powers of the DI framework to load resources efficiently.
+
+#### ❌ Limitations
+- Lets say we have two dataloaders that load the same entity, with they same type of loading key:
+  - **load_user_by_id** -> loads the user by a string attribute
+  - **load_user_by_username** -> also loads the user by a string attribute
+
+  Because Aioinject resolves dependencies based on type hints, we will have a duplicate dependency provider return type, and dependency resolution will fail.
 
 ### Iteration 3- Introduce type aliases for data loaders
 
